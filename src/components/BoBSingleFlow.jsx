@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { RefreshCw, Download, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { RefreshCw, Download, CheckCircle, XCircle, Loader2, Upload, File, X } from 'lucide-react';
 
 const BoBSingleFlow = () => {
   const [subjectLoan, setSubjectLoan] = useState('');
@@ -11,8 +11,39 @@ const BoBSingleFlow = () => {
   const [isBuilding, setIsBuilding] = useState(false);
   const [buildComplete, setBuildComplete] = useState(false);
   const [buildError, setBuildError] = useState(false);
+  const [buildErrorDetails, setBuildErrorDetails] = useState('');
   const [bundleDownloadReady, setBundleDownloadReady] = useState(false);
   const [validationError, setValidationError] = useState('');
+  const [hideNotApplicableDocs, setHideNotApplicableDocs] = useState(true);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+
+  // Read loan number and bundle name from URL parameters on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const loanParam = urlParams.get('loan');
+    const bundleParam = urlParams.get('bundle');
+
+    if (loanParam) {
+      setSubjectLoan(loanParam);
+    }
+    if (bundleParam) {
+      setBundleName(bundleParam);
+    }
+
+    // Auto-load stacking order if both parameters are present
+    if (loanParam && bundleParam) {
+      // Small delay to ensure state is updated
+      setTimeout(() => {
+        setValidationError('');
+        setFieldsLocked(true);
+        const docs = generateStackingOrder(loanParam, bundleParam);
+        setStackingOrder(docs);
+        setPdfBundleName(`${bundleParam.replace(/ /g, '_')}_${loanParam}.pdf`);
+      }, 100);
+    }
+  }, []);
 
   // Bundle Names from dbo.Bundle (~80 options)
   const bundleOptions = [
@@ -42,15 +73,55 @@ const BoBSingleFlow = () => {
       { category: 'Title', documentType: '1003 Application', status: 'Found', displayOrder: 1 },
       { category: 'Title', documentType: 'Credit Report', status: 'Found', displayOrder: 2 },
       { category: 'Title', documentType: 'Appraisal', status: 'Missing', displayOrder: 3 },
-      { category: 'Income', documentType: 'W-2', status: 'Found', displayOrder: 4 },
-      { category: 'Income', documentType: 'Pay Stubs', status: 'Found', displayOrder: 5 },
-      { category: 'Income', documentType: 'Tax Returns', status: 'Missing', displayOrder: 6 },
-      { category: 'Assets', documentType: 'Bank Statements', status: 'Found', displayOrder: 7 },
-      { category: 'Assets', documentType: 'Investment Statements', status: 'Found', displayOrder: 8 },
-      { category: 'Closing', documentType: 'Closing Disclosure', status: 'Found', displayOrder: 9 },
-      { category: 'Closing', documentType: 'Promissory Note', status: 'Found', displayOrder: 10 },
+      { category: 'Title', documentType: 'Title Insurance', status: 'N/A', displayOrder: 4 },
+      { category: 'Income', documentType: 'W-2', status: 'Found', displayOrder: 5 },
+      { category: 'Income', documentType: 'Pay Stubs', status: 'Found', displayOrder: 6 },
+      { category: 'Income', documentType: 'Tax Returns', status: 'Missing', displayOrder: 7 },
+      { category: 'Income', documentType: 'Self-Employment Income', status: 'N/A', displayOrder: 8 },
+      { category: 'Assets', documentType: 'Bank Statements', status: 'Found', displayOrder: 9 },
+      { category: 'Assets', documentType: 'Investment Statements', status: 'Found', displayOrder: 10 },
+      { category: 'Assets', documentType: 'Gift Letter', status: 'N/A', displayOrder: 11 },
+      { category: 'Closing', documentType: 'Closing Disclosure', status: 'Found', displayOrder: 12 },
+      { category: 'Closing', documentType: 'Promissory Note', status: 'Found', displayOrder: 13 },
+      { category: 'Closing', documentType: 'Right of Rescission', status: 'N/A', displayOrder: 14 },
     ];
     return mockDocuments;
+  };
+
+  // Handle file upload
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.type !== 'application/pdf') {
+        alert('Please upload only PDF files');
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  const handleUploadSubmit = () => {
+    if (!selectedFile) {
+      alert('Please select a file to upload');
+      return;
+    }
+
+    // Simulate file upload
+    const newFile = {
+      id: Date.now(),
+      name: selectedFile.name,
+      size: (selectedFile.size / 1024).toFixed(2) + ' KB',
+      uploadDate: new Date().toLocaleString()
+    };
+
+    setUploadedFiles([...uploadedFiles, newFile]);
+    setSelectedFile(null);
+    setShowUploadModal(false);
+    alert(`File "${selectedFile.name}" uploaded successfully!`);
+  };
+
+  const handleRemoveFile = (fileId) => {
+    setUploadedFiles(uploadedFiles.filter(f => f.id !== fileId));
   };
 
   const handleLoadStackingOrder = () => {
@@ -79,6 +150,7 @@ const BoBSingleFlow = () => {
     setIsBuilding(true);
     setBuildComplete(false);
     setBuildError(false);
+    setBuildErrorDetails('');
     setBundleDownloadReady(false);
 
     // Simulate bundle build process (2-5 seconds)
@@ -88,6 +160,16 @@ const BoBSingleFlow = () => {
     setTimeout(() => {
       setIsBuilding(false);
       if (shouldFail) {
+        // Generate detailed error message
+        const errors = [
+          'Document stacking order could not be retrieved from database',
+          'PDF generation service is temporarily unavailable',
+          'Required document template is missing for this bundle type',
+          'Network timeout while connecting to document storage',
+          'Insufficient permissions to access document repository'
+        ];
+        const randomError = errors[Math.floor(Math.random() * errors.length)];
+        setBuildErrorDetails(randomError);
         setBuildError(true);
       } else {
         setBuildComplete(true);
@@ -98,6 +180,7 @@ const BoBSingleFlow = () => {
 
   const handleRebuildBundle = () => {
     setBuildError(false);
+    setBuildErrorDetails('');
     handleBuildBundle();
   };
 
@@ -126,10 +209,21 @@ const BoBSingleFlow = () => {
   };
 
   const getFilteredDocs = () => {
-    if (activeStatusTab === 'all') return stackingOrder;
-    if (activeStatusTab === 'missing') return stackingOrder.filter(d => d.status === 'Missing');
-    if (activeStatusTab === 'found') return stackingOrder.filter(d => d.status === 'Found');
-    return stackingOrder;
+    let docs = stackingOrder;
+
+    // Filter by status tab
+    if (activeStatusTab === 'missing') {
+      docs = docs.filter(d => d.status === 'Missing');
+    } else if (activeStatusTab === 'found') {
+      docs = docs.filter(d => d.status === 'Found');
+    }
+
+    // Filter out N/A docs if checkbox is checked
+    if (hideNotApplicableDocs) {
+      docs = docs.filter(d => d.status !== 'N/A');
+    }
+
+    return docs;
   };
 
   const filteredDocs = getFilteredDocs();
@@ -272,40 +366,61 @@ const BoBSingleFlow = () => {
             </div>
 
             <div className="p-4">
-              {/* Status Tabs */}
-              <div className="flex items-center space-x-2 mb-4">
-                <button
-                  onClick={() => setActiveStatusTab('all')}
-                  className={`px-4 py-2 rounded font-medium ${
-                    activeStatusTab === 'all'
-                      ? 'bg-gray-200 text-gray-800'
-                      : 'bg-white border border-gray-300 text-gray-600'
-                  }`}
-                >
-                  All {stackingOrder.length > 0 && <span className="ml-1">({stackingOrder.length})</span>}
-                </button>
-                <button
-                  onClick={() => setActiveStatusTab('missing')}
-                  className={`px-4 py-2 rounded font-medium flex items-center ${
-                    activeStatusTab === 'missing'
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-white border border-gray-300 text-gray-600'
-                  }`}
-                >
-                  Missing {missingCount > 0 && (
-                    <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full font-semibold">{missingCount}</span>
-                  )}
-                </button>
-                <button
-                  onClick={() => setActiveStatusTab('found')}
-                  className={`px-4 py-2 rounded font-medium ${
-                    activeStatusTab === 'found'
-                      ? 'bg-gray-200 text-gray-800'
-                      : 'bg-white border border-gray-300 text-gray-600'
-                  }`}
-                >
-                  Found {foundCount > 0 && <span className="ml-1">({foundCount})</span>}
-                </button>
+              {/* Status Tabs and Actions */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setActiveStatusTab('all')}
+                    className={`px-4 py-2 rounded font-medium ${
+                      activeStatusTab === 'all'
+                        ? 'bg-gray-200 text-gray-800'
+                        : 'bg-white border border-gray-300 text-gray-600'
+                    }`}
+                  >
+                    All {stackingOrder.length > 0 && <span className="ml-1">({stackingOrder.length})</span>}
+                  </button>
+                  <button
+                    onClick={() => setActiveStatusTab('missing')}
+                    className={`px-4 py-2 rounded font-medium flex items-center ${
+                      activeStatusTab === 'missing'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-white border border-gray-300 text-gray-600'
+                    }`}
+                  >
+                    Missing {missingCount > 0 && (
+                      <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full font-semibold">{missingCount}</span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setActiveStatusTab('found')}
+                    className={`px-4 py-2 rounded font-medium ${
+                      activeStatusTab === 'found'
+                        ? 'bg-gray-200 text-gray-800'
+                        : 'bg-white border border-gray-300 text-gray-600'
+                    }`}
+                  >
+                    Found {foundCount > 0 && <span className="ml-1">({foundCount})</span>}
+                  </button>
+                </div>
+
+                <div className="flex items-center space-x-4">
+                  <label className="flex items-center space-x-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={hideNotApplicableDocs}
+                      onChange={(e) => setHideNotApplicableDocs(e.target.checked)}
+                      className="rounded accent-teal-600"
+                    />
+                    <span>Hide Not Applicable Docs</span>
+                  </label>
+                  <button
+                    onClick={() => setShowUploadModal(true)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-teal-100 text-teal-700 rounded hover:bg-teal-200 font-medium"
+                  >
+                    <Upload size={16} />
+                    <span>Upload Document</span>
+                  </button>
+                </div>
               </div>
 
               {/* Documents Table */}
@@ -337,7 +452,9 @@ const BoBSingleFlow = () => {
                           <span className={`px-2 py-1 rounded text-sm font-medium ${
                             doc.status === 'Found'
                               ? 'bg-gray-100 text-gray-800'
-                              : 'bg-red-100 text-red-800'
+                              : doc.status === 'Missing'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
                           }`}>
                             {doc.status}
                           </span>
@@ -405,14 +522,22 @@ const BoBSingleFlow = () => {
       {/* Build Error Modal */}
       {buildError && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96">
+          <div className="bg-white rounded-lg p-6 w-[500px]">
             <div className="flex items-center gap-3 mb-4">
               <XCircle className="text-red-600" size={32} />
               <h3 className="text-xl font-semibold">Build Failed</h3>
             </div>
-            <p className="text-gray-600 mb-6">
-              An error occurred. Build could not complete. Please click "Re-Build Bundle" to try again.
-            </p>
+            <div className="mb-6">
+              <p className="text-gray-600 mb-3">
+                An error occurred. Build could not complete. Please click "Re-Build Bundle" to try again.
+              </p>
+              {buildErrorDetails && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded">
+                  <p className="text-sm font-semibold text-red-800 mb-1">Error Details:</p>
+                  <p className="text-sm text-red-700">{buildErrorDetails}</p>
+                </div>
+              )}
+            </div>
             <div className="flex space-x-3">
               <button
                 onClick={handleCancelError}
@@ -425,6 +550,83 @@ const BoBSingleFlow = () => {
                 className="flex-1 px-6 py-2 bg-teal-700 text-white rounded hover:bg-teal-800 font-medium"
               >
                 Re-Build Bundle
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Document Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[500px]">
+            <h3 className="text-lg font-semibold mb-4">Upload Supplemental Document</h3>
+            <p className="text-sm text-gray-600 mb-4">Upload additional documents to supplement the bundle (PDF only)</p>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select PDF File</label>
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={handleFileUpload}
+                className="w-full px-3 py-2 border border-gray-300 rounded"
+              />
+              {selectedFile && (
+                <div className="mt-2 p-2 bg-teal-50 border border-teal-200 rounded flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <File size={16} className="text-teal-600" />
+                    <span className="text-sm text-teal-800">{selectedFile.name}</span>
+                  </div>
+                  <button
+                    onClick={() => setSelectedFile(null)}
+                    className="text-teal-600 hover:text-teal-800"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {uploadedFiles.length > 0 && (
+              <div className="mb-4">
+                <p className="text-sm font-medium text-gray-700 mb-2">Uploaded Files:</p>
+                <div className="space-y-2">
+                  {uploadedFiles.map(file => (
+                    <div key={file.id} className="p-2 bg-gray-50 border border-gray-200 rounded flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <File size={16} className="text-gray-600" />
+                        <div>
+                          <p className="text-sm text-gray-800">{file.name}</p>
+                          <p className="text-xs text-gray-500">{file.size} - {file.uploadDate}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveFile(file.id)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowUploadModal(false);
+                  setSelectedFile(null);
+                }}
+                className="flex-1 px-6 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 font-medium"
+              >
+                Close
+              </button>
+              <button
+                onClick={handleUploadSubmit}
+                className="flex-1 px-6 py-2 bg-teal-700 text-white rounded hover:bg-teal-800 font-medium"
+              >
+                Upload File
               </button>
             </div>
           </div>
