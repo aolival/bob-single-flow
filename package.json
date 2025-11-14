@@ -7,7 +7,14 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:visible": "cross-env HEADLESS=false jest",
+    "test:slow": "cross-env SLOW_MO=100 jest",
+    "perf": "node tests/performance-monitor.js",
+    "perf:visible": "cross-env HEADLESS=false node tests/performance-monitor.js"
   },
   "dependencies": {
     "lucide-react": "^0.553.0",
@@ -21,11 +28,14 @@
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.1.0",
     "autoprefixer": "^10.4.22",
+    "cross-env": "^10.1.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "jest": "^30.2.0",
     "postcss": "^8.5.6",
+    "puppeteer": "^24.30.0",
     "tailwindcss": "^3.4.18",
     "vite": "^7.2.2"
   }

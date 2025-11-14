@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Download, CheckCircle, XCircle, Loader2, Upload, File, X } from 'lucide-react';
+import { RefreshCw, Download, CheckCircle, XCircle, Loader2, Upload, File, X, Search } from 'lucide-react';
+import { getLoanDocumentStatus } from '../services/epsDocumentApi';
 
 const BoBSingleFlow = () => {
   const [subjectLoan, setSubjectLoan] = useState('');
   const [bundleName, setBundleName] = useState('');
+  const [borrowerName, setBorrowerName] = useState('');
   const [pdfBundleName, setPdfBundleName] = useState('');
   const [stackingOrder, setStackingOrder] = useState([]);
   const [activeStatusTab, setActiveStatusTab] = useState('all');
@@ -18,6 +20,8 @@ const BoBSingleFlow = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
+  const [loanValidated, setLoanValidated] = useState(false);
 
   // Read loan number and bundle name from URL parameters on component mount
   useEffect(() => {
@@ -27,6 +31,7 @@ const BoBSingleFlow = () => {
 
     if (loanParam) {
       setSubjectLoan(loanParam);
+      setLoanValidated(true); // Mark as validated when loaded from URL
     }
     if (bundleParam) {
       setBundleName(bundleParam);
@@ -35,12 +40,20 @@ const BoBSingleFlow = () => {
     // Auto-load stacking order if both parameters are present
     if (loanParam && bundleParam) {
       // Small delay to ensure state is updated
-      setTimeout(() => {
+      setTimeout(async () => {
         setValidationError('');
         setFieldsLocked(true);
-        const docs = generateStackingOrder(loanParam, bundleParam);
+        setIsLoadingDocuments(true);
+        const docs = await generateStackingOrder(loanParam, bundleParam);
         setStackingOrder(docs);
-        setPdfBundleName(`${bundleParam.replace(/ /g, '_')}_${loanParam}.pdf`);
+
+        // Fetch borrower name and set PDF bundle name
+        const mockBorrowerName = 'johndanieldoe'; // TODO: Fetch from API
+        setBorrowerName(mockBorrowerName);
+        const formattedBundleName = bundleParam.toLowerCase().replace(/ /g, '');
+        setPdfBundleName(`${mockBorrowerName}-${loanParam}-${formattedBundleName}.pdf`);
+
+        setIsLoadingDocuments(false);
       }, 100);
     }
   }, []);
@@ -67,25 +80,59 @@ const BoBSingleFlow = () => {
     "Zions", "zFHA EBinder"
   ];
 
-  // Generate mock stacking order based on bundle selection
-  const generateStackingOrder = (loan, bundle) => {
-    const mockDocuments = [
-      { category: 'Title', documentType: '1003 Application', status: 'Found', displayOrder: 1 },
-      { category: 'Title', documentType: 'Credit Report', status: 'Found', displayOrder: 2 },
-      { category: 'Title', documentType: 'Appraisal', status: 'Missing', displayOrder: 3 },
-      { category: 'Title', documentType: 'Title Insurance', status: 'N/A', displayOrder: 4 },
-      { category: 'Income', documentType: 'W-2', status: 'Found', displayOrder: 5 },
-      { category: 'Income', documentType: 'Pay Stubs', status: 'Found', displayOrder: 6 },
-      { category: 'Income', documentType: 'Tax Returns', status: 'Missing', displayOrder: 7 },
-      { category: 'Income', documentType: 'Self-Employment Income', status: 'N/A', displayOrder: 8 },
-      { category: 'Assets', documentType: 'Bank Statements', status: 'Found', displayOrder: 9 },
-      { category: 'Assets', documentType: 'Investment Statements', status: 'Found', displayOrder: 10 },
-      { category: 'Assets', documentType: 'Gift Letter', status: 'N/A', displayOrder: 11 },
-      { category: 'Closing', documentType: 'Closing Disclosure', status: 'Found', displayOrder: 12 },
-      { category: 'Closing', documentType: 'Promissory Note', status: 'Found', displayOrder: 13 },
-      { category: 'Closing', documentType: 'Right of Rescission', status: 'N/A', displayOrder: 14 },
+  // Generate stacking order using real EPS API
+  const generateStackingOrder = async (loan, bundle) => {
+    // Define required documents for this bundle (these would ideally come from dbo.Bundle API)
+    const requiredDocuments = [
+      { documentType: '1003 Application', category: 'Application', displayOrder: 1 },
+      { documentType: 'Credit Report', category: 'Credit', displayOrder: 2 },
+      { documentType: 'Appraisal', category: 'Property', displayOrder: 3 },
+      { documentType: 'Title Insurance', category: 'Title', displayOrder: 4 },
+      { documentType: 'W-2', category: 'Income', displayOrder: 5 },
+      { documentType: 'Pay Stubs', category: 'Income', displayOrder: 6 },
+      { documentType: 'Tax Returns', category: 'Income', displayOrder: 7 },
+      { documentType: 'Self-Employment Income', category: 'Income', displayOrder: 8 },
+      { documentType: 'Bank Statements', category: 'Assets', displayOrder: 9 },
+      { documentType: 'Investment Statements', category: 'Assets', displayOrder: 10 },
+      { documentType: 'Gift Letter', category: 'Assets', displayOrder: 11 },
+      { documentType: 'Closing Disclosure', category: 'Closing', displayOrder: 12 },
+      { documentType: 'Promissory Note', category: 'Closing', displayOrder: 13 },
+      { documentType: 'Right of Rescission', category: 'Closing', displayOrder: 14 },
     ];
-    return mockDocuments;
+
+    try {
+      console.log(`📄 Fetching documents for loan: ${loan} (Bundle: ${bundle})`);
+
+      // Call real EPS API
+      const status = await getLoanDocumentStatus(loan, requiredDocuments);
+
+      console.log(`✅ API Response:`, status);
+      console.log(`   - Total Required: ${status.totalRequired}`);
+      console.log(`   - Found: ${status.foundCount}`);
+      console.log(`   - Missing: ${status.missingCount}`);
+
+      // Map API response to component format
+      const documents = status.documentStatus.map(doc => ({
+        category: doc.category,
+        documentType: doc.documentType,
+        status: doc.status, // 'Found' or 'Missing' from real API
+        displayOrder: doc.displayOrder,
+        foundCount: doc.foundCount,
+        documents: doc.documents, // Actual document objects from API
+      }));
+
+      return documents;
+    } catch (error) {
+      console.error('❌ Error fetching documents from EPS API:', error);
+
+      // Fallback: show all documents as Missing if API fails
+      return requiredDocuments.map(doc => ({
+        ...doc,
+        status: 'Missing',
+        foundCount: 0,
+        documents: [],
+      }));
+    }
   };
 
   // Handle file upload
@@ -124,26 +171,35 @@ const BoBSingleFlow = () => {
     setUploadedFiles(uploadedFiles.filter(f => f.id !== fileId));
   };
 
-  const handleLoadStackingOrder = () => {
-    // Validation
-    if (!subjectLoan.trim()) {
-      setValidationError('Please enter a Subject Loan number');
-      return;
-    }
-    if (!bundleName) {
-      setValidationError('Please select a bundle name');
+  const handleLoadStackingOrder = async () => {
+    // Validation should already be done at this point
+    if (!loanValidated || !bundleName) {
+      setValidationError('Please ensure loan number is validated and bundle is selected');
       return;
     }
 
     setValidationError('');
     setFieldsLocked(true);
+    setIsLoadingDocuments(true);
 
-    // Generate stacking order
-    const docs = generateStackingOrder(subjectLoan, bundleName);
-    setStackingOrder(docs);
+    try {
+      // Generate stacking order (now async with real API!)
+      const docs = await generateStackingOrder(subjectLoan, bundleName);
+      setStackingOrder(docs);
 
-    // Set PDF Bundle Name (from dbo.Bundle.OutputFileNameFormat)
-    setPdfBundleName(`${bundleName.replace(/ /g, '_')}_${subjectLoan}.pdf`);
+      // Fetch borrower name (mock for now - would come from EPS API)
+      const mockBorrowerName = 'johndanieldoe'; // TODO: Fetch from API
+      setBorrowerName(mockBorrowerName);
+
+      // Set PDF Bundle Name (format: borrowername-loannumber-bundlename.pdf)
+      const formattedBundleName = bundleName.toLowerCase().replace(/ /g, '');
+      setPdfBundleName(`${mockBorrowerName}-${subjectLoan}-${formattedBundleName}.pdf`);
+    } catch (error) {
+      setValidationError(`Error loading documents: ${error.message}`);
+      setFieldsLocked(false);
+    } finally {
+      setIsLoadingDocuments(false);
+    }
   };
 
   const handleBuildBundle = () => {
@@ -195,9 +251,39 @@ const BoBSingleFlow = () => {
     // In production, this would trigger actual PDF download from dbo.Bundle.ServerFolderName
   };
 
+  const handleLoanNumberValidation = () => {
+    // Only validate when user presses Enter
+    if (!subjectLoan.trim()) {
+      setValidationError('Invalid Loan Number. Please Check and Try Again');
+      setLoanValidated(false);
+      return;
+    }
+
+    // Check for multiple loan numbers
+    const hasMultipleLoans = /[\s,;|\t\n\r]+/.test(subjectLoan.trim());
+    if (hasMultipleLoans) {
+      setValidationError('Invalid Loan Number. Please Check and Try Again');
+      setLoanValidated(false);
+      return;
+    }
+
+    // Validate loan number format
+    const loanNumberPattern = /^[A-Za-z]+[0-9]+$/;
+    if (!loanNumberPattern.test(subjectLoan.trim())) {
+      setValidationError('Invalid Loan Number. Please Check and Try Again');
+      setLoanValidated(false);
+      return;
+    }
+
+    // Validation passed - show bundle dropdown
+    setValidationError('');
+    setLoanValidated(true);
+  };
+
   const handleStartNew = () => {
     setSubjectLoan('');
     setBundleName('');
+    setBorrowerName('');
     setPdfBundleName('');
     setStackingOrder([]);
     setActiveStatusTab('all');
@@ -206,6 +292,7 @@ const BoBSingleFlow = () => {
     setBuildError(false);
     setBundleDownloadReady(false);
     setValidationError('');
+    setLoanValidated(false);
   };
 
   const getFilteredDocs = () => {
@@ -260,84 +347,127 @@ const BoBSingleFlow = () => {
         {/* Selection Section */}
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="p-6">
-            <div className="grid grid-cols-3 gap-6">
-              {/* Subject Loan */}
+            <div className="space-y-6 max-w-3xl">
+              {/* Subject Loan - Always show first */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select Subject Loan
                 </label>
-                <input
-                  type="text"
-                  value={subjectLoan}
-                  onChange={(e) => setSubjectLoan(e.target.value)}
-                  disabled={fieldsLocked}
-                  placeholder="Enter loan number"
-                  className="w-full px-3 py-2 border border-gray-300 rounded disabled:bg-gray-200 disabled:text-gray-600 disabled:cursor-not-allowed"
-                />
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center px-3 pointer-events-none">
+                    {!subjectLoan && !fieldsLocked && (
+                      <div className="flex items-center gap-2 text-gray-400">
+                        <Search size={16} />
+                        <span className="text-sm">Search for and select a loan to build a bundle</span>
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    value={subjectLoan}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setSubjectLoan(value);
+                      // Clear validation error when user types
+                      if (validationError) {
+                        setValidationError('');
+                      }
+                      // Reset validation state when user modifies the field
+                      if (loanValidated) {
+                        setLoanValidated(false);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleLoanNumberValidation();
+                      }
+                    }}
+                    disabled={fieldsLocked}
+                    className="w-full px-3 py-2 border border-gray-300 rounded disabled:bg-gray-200 disabled:text-gray-600 disabled:cursor-not-allowed bg-transparent relative z-10"
+                  />
+                </div>
               </div>
 
-              {/* Bundle Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Bundle
-                </label>
-                <select
-                  value={bundleName}
-                  onChange={(e) => setBundleName(e.target.value)}
-                  disabled={fieldsLocked}
-                  className="w-full px-3 py-2 border border-gray-300 rounded bg-white disabled:bg-gray-200 disabled:text-gray-600 disabled:cursor-not-allowed"
-                >
-                  <option value="">Select Bundle</option>
-                  <option value="C2C - QC Bundle" style={{fontWeight: 'bold'}}>C2C - QC Bundle</option>
-                  <option value="Docs Back - QC Bundle" style={{fontWeight: 'bold'}}>Docs Back - QC Bundle</option>
-                  <option value="Funded - QC Bundle" style={{fontWeight: 'bold'}}>Funded - QC Bundle</option>
-                  {bundleOptions.slice(3).map(option => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
-              </div>
+              {/* Bundle Name and PDF Bundle Name - Show when loan is validated */}
+              {loanValidated && (
+                <div className={`grid ${bundleName ? 'grid-cols-2' : 'grid-cols-1'} gap-6`}>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Bundle
+                    </label>
+                    <select
+                      value={bundleName}
+                      onChange={(e) => {
+                        const selectedBundle = e.target.value;
+                        setBundleName(selectedBundle);
+                        // Auto-generate PDF bundle name when bundle is selected
+                        if (selectedBundle) {
+                          const mockBorrowerName = 'johndanieldoe'; // TODO: Fetch from API
+                          const formattedBundleName = selectedBundle.toLowerCase().replace(/ /g, '');
+                          setPdfBundleName(`${mockBorrowerName}-${subjectLoan}-${formattedBundleName}.pdf`);
+                          setBorrowerName(mockBorrowerName);
+                        } else {
+                          setPdfBundleName('');
+                        }
+                      }}
+                      disabled={fieldsLocked}
+                      className="w-full px-3 py-2 border border-gray-300 rounded bg-white disabled:bg-gray-200 disabled:text-gray-600 disabled:cursor-not-allowed"
+                    >
+                      <option value="">Select</option>
+                      {bundleOptions.slice(3).map(option => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                  </div>
 
-              {/* PDF Bundle Name (Read-only) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  PDF Bundle Name
-                </label>
-                <input
-                  type="text"
-                  value={pdfBundleName}
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-600"
-                  placeholder="Auto-generated"
-                />
-              </div>
+                  {/* PDF Bundle Name - Show only after bundle is selected */}
+                  {bundleName && (
+                    <div className="flex items-end">
+                      <input
+                        type="text"
+                        value={pdfBundleName}
+                        readOnly
+                        className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-600"
+                        placeholder="Auto-generated"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Validation Error */}
-            {validationError && (
+            {/* Validation Error - Only show when explicitly set by handleLoadStackingOrder */}
+            {validationError && stackingOrder.length === 0 && (
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-red-700">
                 {validationError}
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex justify-end space-x-3 mt-6">
-              {stackingOrder.length > 0 && (
+            {/* Action Buttons - Show when bundle is selected */}
+            {loanValidated && bundleName && (
+              <div className="flex justify-center space-x-4 mt-6">
                 <button
                   onClick={handleStartNew}
-                  className="px-6 py-2 bg-teal-100 text-teal-700 rounded hover:bg-teal-200 font-medium"
+                  className="px-8 py-2.5 bg-teal-50 text-teal-600 rounded-full hover:bg-teal-100 font-medium border border-teal-200"
                 >
                   Start New Bundle
                 </button>
-              )}
-              {stackingOrder.length === 0 && (
                 <button
                   onClick={handleLoadStackingOrder}
-                  className="px-6 py-2 bg-teal-700 text-white rounded hover:bg-teal-800 font-medium"
+                  disabled={isLoadingDocuments || fieldsLocked}
+                  className="px-8 py-2.5 bg-teal-700 text-white rounded-full hover:bg-teal-800 font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
-                  Load Stacking Order
+                  {isLoadingDocuments ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="animate-spin" size={18} />
+                      Building...
+                    </span>
+                  ) : (
+                    'Build Bundle'
+                  )}
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -429,25 +559,27 @@ const BoBSingleFlow = () => {
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Display Order
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Category
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Document Type
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Category
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredDocs.map((doc, index) => (
                       <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-gray-700">{doc.displayOrder}</td>
-                        <td className="px-6 py-4 text-gray-700">{doc.category}</td>
-                        <td className="px-6 py-4 text-gray-700">{doc.documentType}</td>
+                        <td className="px-6 py-4">
+                          <a
+                            href={`#docs-manager?type=${encodeURIComponent(doc.documentType)}&loan=${encodeURIComponent(subjectLoan)}`}
+                            className="text-teal-600 hover:text-teal-800 font-medium underline"
+                          >
+                            {doc.documentType}
+                          </a>
+                        </td>
                         <td className="px-6 py-4">
                           <span className={`px-2 py-1 rounded text-sm font-medium ${
                             doc.status === 'Found'
@@ -459,6 +591,7 @@ const BoBSingleFlow = () => {
                             {doc.status}
                           </span>
                         </td>
+                        <td className="px-6 py-4 text-gray-700">{doc.category}</td>
                       </tr>
                     ))}
                   </tbody>

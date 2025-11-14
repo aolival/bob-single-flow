@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPS API Test - CMG Document Servicing</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #67E8F9 0%, #14B8A6 50%, #84CC16 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .test-section {
+            background: white;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #14B8A6;
+            border-bottom: 2px solid #14B8A6;
+            padding-bottom: 10px;
+        }
+        button {
+            background-color: #14B8A6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0F9488;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .output {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .success {
+            color: #4ade80;
+        }
+        .error {
+            color: #f87171;
+        }
+        .info {
+            color: #60a5fa;
+        }
+        .warning {
+            color: #fbbf24;
+        }
+        .config-box {
+            background-color: #f0fdf4;
+            border-left: 4px solid #14B8A6;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .config-box code {
+            background-color: #e0f2fe;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        .loan-input {
+            width: 300px;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #d1d5db;
+            border-radius: 6px;
+            margin-right: 10px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #14B8A6 0%, #0F9488 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .stat-card p {
+            margin: 0;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔌 EPS Document API Test Suite</h1>
+        <p>CMG Document Servicing API Integration Testing</p>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 API Configuration</h2>
+        <div class="config-box">
+            <p><strong>Base URL:</strong> <code id="apiUrl">https://qa.servicing-api.cmgtest.com/docs</code></p>
+            <p><strong>API Key:</strong> <code>dd87...76a</code> (masked)</p>
+            <p><strong>Test Loans:</strong> <code>TEST0000081920</code>, <code>TEST0000013271</code></p>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🧪 Quick Tests</h2>
+        <button onclick="testConnection()">Test Connection</button>
+        <button onclick="testLoan1()">Test Loan #1 (81920)</button>
+        <button onclick="testLoan2()">Test Loan #2 (13271)</button>
+        <button onclick="testBothLoans()">Test Both Loans</button>
+        <button onclick="clearOutput()">Clear Output</button>
+        <div id="quickTestOutput" class="output"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔍 Custom Loan Test</h2>
+        <input type="text" id="customLoanInput" class="loan-input" placeholder="Enter loan number..." value="TEST0000081920">
+        <button onclick="testCustomLoan()">Test Loan</button>
+        <div id="customTestOutput" class="output"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Document Status Analysis</h2>
+        <button onclick="analyzeDocuments()">Analyze Document Status</button>
+        <div id="statsContainer" class="stats" style="display: none;">
+            <div class="stat-card">
+                <h3>Total Documents</h3>
+                <p id="statTotal">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Unique Document Types</h3>
+                <p id="statTypes">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Latest Document</h3>
+                <p id="statLatest" style="font-size: 14px;">N/A</p>
+            </div>
+            <div class="stat-card">
+                <h3>API Response Time</h3>
+                <p id="statTime">0ms</p>
+            </div>
+        </div>
+        <div id="analysisOutput" class="output"></div>
+    </div>
+
+    <script>
+        const API_CONFIG = {
+            baseUrl: 'https://qa.servicing-api.cmgtest.com/docs',
+            apiKey: 'dd87e724615b4d6988c58fe5b771876a',
+        };
+
+        const TEST_LOANS = ['TEST0000081920', 'TEST0000013271'];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            return `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+        }
+
+        function appendOutput(elementId, content) {
+            const element = document.getElementById(elementId);
+            element.innerHTML += content;
+            element.scrollTop = element.scrollHeight;
+        }
+
+        function clearOutput() {
+            document.getElementById('quickTestOutput').innerHTML = '';
+            document.getElementById('customTestOutput').innerHTML = '';
+            document.getElementById('analysisOutput').innerHTML = '';
+            document.getElementById('statsContainer').style.display = 'none';
+        }
+
+        async function callApi(endpoint) {
+            const startTime = performance.now();
+            const url = `${API_CONFIG.baseUrl}${endpoint}`;
+
+            const response = await fetch(url, {
+                headers: {
+                    'Ocp-Apim-Subscription-Key': API_CONFIG.apiKey,
+                    'Accept': 'application/json',
+                }
+            });
+
+            const endTime = performance.now();
+            const responseTime = Math.round(endTime - startTime);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            return { data, responseTime };
+        }
+
+        async function testConnection() {
+            const output = document.getElementById('quickTestOutput');
+            output.innerHTML = log('🔄 Testing API connection...', 'info');
+
+            try {
+                const { data, responseTime } = await callApi('/api/v1/documents?AccountId=TEST0000081920');
+                appendOutput('quickTestOutput', log(`✅ Connection successful! (${responseTime}ms)`, 'success'));
+                appendOutput('quickTestOutput', log(`Found ${data?.documents?.length || 0} documents for test loan`, 'success'));
+            } catch (error) {
+                appendOutput('quickTestOutput', log(`❌ Connection failed: ${error.message}`, 'error'));
+            }
+        }
+
+        async function testLoan(loanNumber, outputId = 'quickTestOutput') {
+            appendOutput(outputId, log(`🔄 Fetching documents for loan: ${loanNumber}`, 'info'));
+
+            try {
+                const { data, responseTime } = await callApi(`/api/v1/documents?AccountId=${loanNumber}`);
+                const docs = data?.documents || [];
+
+                appendOutput(outputId, log(`✅ Success! Found ${docs.length} documents (${responseTime}ms)`, 'success'));
+
+                if (docs.length > 0) {
+                    appendOutput(outputId, log(`\n📄 Document List:`, 'info'));
+                    docs.forEach((doc, index) => {
+                        appendOutput(outputId, log(`  ${index + 1}. ${doc.name || 'Unnamed Document'}`, 'info'));
+                        appendOutput(outputId, log(`     GUID: ${doc.guid}`, 'info'));
+                        appendOutput(outputId, log(`     Created: ${new Date(doc.createdOn).toLocaleDateString()}`, 'info'));
+                    });
+
+                    appendOutput(outputId, log(`\n📦 Sample Document JSON:`, 'warning'));
+                    appendOutput(outputId, JSON.stringify(docs[0], null, 2) + '\n');
+                }
+
+                return { docs, responseTime };
+            } catch (error) {
+                appendOutput(outputId, log(`❌ Failed: ${error.message}`, 'error'));
+                return null;
+            }
+        }
+
+        async function testLoan1() {
+            await testLoan(TEST_LOANS[0]);
+        }
+
+        async function testLoan2() {
+            await testLoan(TEST_LOANS[1]);
+        }
+
+        async function testBothLoans() {
+            document.getElementById('quickTestOutput').innerHTML = log('🔄 Testing both loans...', 'info');
+
+            for (const loan of TEST_LOANS) {
+                await testLoan(loan);
+                appendOutput('quickTestOutput', log('---\n', 'info'));
+            }
+        }
+
+        async function testCustomLoan() {
+            const loanNumber = document.getElementById('customLoanInput').value.trim();
+            if (!loanNumber) {
+                alert('Please enter a loan number');
+                return;
+            }
+
+            document.getElementById('customTestOutput').innerHTML = '';
+            await testLoan(loanNumber, 'customTestOutput');
+        }
+
+        async function analyzeDocuments() {
+            const outputId = 'analysisOutput';
+            document.getElementById(outputId).innerHTML = log('🔄 Analyzing documents across all test loans...', 'info');
+
+            const allDocs = [];
+            let totalTime = 0;
+
+            for (const loan of TEST_LOANS) {
+                appendOutput(outputId, log(`\nAnalyzing loan: ${loan}`, 'info'));
+                const result = await testLoan(loan, outputId);
+                if (result) {
+                    allDocs.push(...result.docs);
+                    totalTime += result.responseTime;
+                }
+            }
+
+            // Calculate stats
+            const uniqueTypes = new Set(allDocs.map(d => d.documentTypeGUID || d.name)).size;
+            const latestDoc = allDocs.reduce((latest, doc) => {
+                return new Date(doc.createdOn) > new Date(latest.createdOn) ? doc : latest;
+            }, allDocs[0]);
+
+            // Update stats cards
+            document.getElementById('statTotal').textContent = allDocs.length;
+            document.getElementById('statTypes').textContent = uniqueTypes;
+            document.getElementById('statLatest').textContent = latestDoc ? new Date(latestDoc.createdOn).toLocaleDateString() : 'N/A';
+            document.getElementById('statTime').textContent = `${Math.round(totalTime)}ms`;
+            document.getElementById('statsContainer').style.display = 'grid';
+
+            appendOutput(outputId, log(`\n✅ Analysis complete!`, 'success'));
+            appendOutput(outputId, log(`Total documents found: ${allDocs.length}`, 'success'));
+            appendOutput(outputId, log(`Unique document types: ${uniqueTypes}`, 'success'));
+        }
+
+        // Auto-run connection test on page load
+        window.addEventListener('load', () => {
+            setTimeout(testConnection, 500);
+        });
+    </script>
+</body>
+</html>
