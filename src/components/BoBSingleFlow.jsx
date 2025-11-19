@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Download, CheckCircle, XCircle, Loader2, Upload, File, X, Search, ChevronDown } from 'lucide-react';
+import { RefreshCw, Download, CheckCircle, XCircle, Loader2, Upload, File, X, Search, ChevronDown, ChevronRight, Lock, Eye, Filter, AlertTriangle } from 'lucide-react';
 import { getLoanDocumentStatus } from '../services/epsDocumentApi';
 
 const BoBSingleFlow = () => {
@@ -25,6 +25,21 @@ const BoBSingleFlow = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [showDocStorageModal, setShowDocStorageModal] = useState(false);
+  const [selectedDocType, setSelectedDocType] = useState('');
+  const [expandedCategories, setExpandedCategories] = useState({});
+  const [showDocViewer, setShowDocViewer] = useState(false);
+  const [viewingDocument, setViewingDocument] = useState(null);
+  const [previewDocument, setPreviewDocument] = useState(null);
+  const [splitPosition, setSplitPosition] = useState(60); // Percentage for left panel width
+  const [modalPosition, setModalPosition] = useState({ x: 350, y: 50 }); // Modal position for dragging
+  const [activeDocument, setActiveDocument] = useState(null); // Track which document is currently being viewed
+  const [docViewerSplitPosition, setDocViewerSplitPosition] = useState(20); // Percentage for Document Viewer left panel width
+  const [docStorageTypeFilter, setDocStorageTypeFilter] = useState(''); // Filter documents by type/status in storage modal
+  const [docStorageCategoryFilter, setDocStorageCategoryFilter] = useState(''); // Filter documents by category in storage modal
+  const [showInactiveWarning, setShowInactiveWarning] = useState(false); // Warning modal for inactive documents
+  const [editedDocProperties, setEditedDocProperties] = useState(null); // Track edited document properties
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false); // Show success message after save
 
   // Read loan number and bundle name from URL parameters on component mount
   useEffect(() => {
@@ -164,39 +179,49 @@ const BoBSingleFlow = () => {
       return documents;
     }
 
-    try {
-      console.log(`📄 Fetching documents for loan: ${loan} (Bundle: ${bundle})`);
+    // For other bundles: Generate random preview with 80% Found, 10% Missing, 10% Inactive
+    console.log(`📄 Generating random preview for: ${bundle}`);
 
-      // Call real EPS API
-      const status = await getLoanDocumentStatus(loan, requiredDocuments);
+    const totalDocs = requiredDocuments.length;
+    const missingCount = Math.ceil(totalDocs * 0.1); // 10%
+    const inactiveCount = Math.ceil(totalDocs * 0.1); // 10%
+    const foundCount = totalDocs - missingCount - inactiveCount; // Remaining 80%
 
-      console.log(`✅ API Response:`, status);
-      console.log(`   - Total Required: ${status.totalRequired}`);
-      console.log(`   - Found: ${status.foundCount}`);
-      console.log(`   - Missing: ${status.missingCount}`);
+    // Shuffle indices to randomly assign statuses
+    const indices = Array.from({ length: totalDocs }, (_, i) => i);
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
 
-      // Map API response to component format
-      const documents = status.documentStatus.map(doc => ({
+    // Assign statuses: first missingCount as Missing, next inactiveCount as Inactive, rest as Found
+    const missingIndices = new Set(indices.slice(0, missingCount));
+    const inactiveIndices = new Set(indices.slice(missingCount, missingCount + inactiveCount));
+
+    const documents = requiredDocuments.map((doc, index) => {
+      let status = 'Found';
+      let foundCountValue = 1;
+
+      if (missingIndices.has(index)) {
+        status = 'Missing';
+        foundCountValue = 0;
+      } else if (inactiveIndices.has(index)) {
+        status = 'Pending Review - Inactive';
+        foundCountValue = 1;
+      }
+
+      return {
         category: doc.category,
         documentType: doc.documentType,
-        status: doc.status, // 'Found' or 'Missing' from real API
+        status: status,
         displayOrder: doc.displayOrder,
-        foundCount: doc.foundCount,
-        documents: doc.documents, // Actual document objects from API
-      }));
+        foundCount: foundCountValue,
+        documents: status === 'Found' || status === 'Pending Review - Inactive' ? [{ id: 1, name: `${doc.documentType}.pdf` }] : [],
+      };
+    });
 
-      return documents;
-    } catch (error) {
-      console.error('❌ Error fetching documents from EPS API:', error);
-
-      // Fallback: show all documents as Missing if API fails
-      return requiredDocuments.map(doc => ({
-        ...doc,
-        status: 'Missing',
-        foundCount: 0,
-        documents: [],
-      }));
-    }
+    console.log(`✅ Random Preview Generated - Found: ${foundCount}, Missing: ${missingCount}, Inactive: ${inactiveCount}`);
+    return documents;
   };
 
   // Handle file upload
@@ -267,6 +292,21 @@ const BoBSingleFlow = () => {
   };
 
   const handleBuildBundle = () => {
+    // Check if there are any inactive documents
+    const inactiveDocuments = stackingOrder.filter(doc => doc.status === 'Pending Review - Inactive');
+
+    if (inactiveDocuments.length > 0) {
+      // Show warning modal if inactive documents exist
+      setShowInactiveWarning(true);
+      return;
+    }
+
+    // Proceed with build if no inactive documents
+    proceedWithBuild();
+  };
+
+  const proceedWithBuild = () => {
+    setShowInactiveWarning(false);
     setIsBuilding(true);
     setBuildComplete(false);
     setBuildError(false);
@@ -340,6 +380,238 @@ const BoBSingleFlow = () => {
     setBundleDownloadReady(false);
     setValidationError('');
     setLoanValidated(false);
+  };
+
+  // Mock data for all available documents in EPS for the loan
+  const getAllLoanDocuments = () => {
+    // Helper function to randomly assign status (excluding Approved and Inactive)
+    const getRandomStatus = () => {
+      const statuses = ['not-reviewed', 'rejected', 'pending'];
+      return statuses[Math.floor(Math.random() * statuses.length)];
+    };
+
+    return {
+      'POST CLSNG': [
+        { name: 'Final Title Policy', filename: 'FinalTitlePolicy.pdf', uploaded: '10/9/2025 12:14:20 PM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Recorded Security Instrument', filename: 'RecordedSecurity.pdf', uploaded: '10/9/2025 12:14:21 PM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Servicing Goodbye Letter', filename: 'ServicingGoodbye.pdf', uploaded: '9/11/2025 2:30:55 PM', status: getRandomStatus(), source: 'Manually Add' }
+      ],
+      'CRED': [
+        { name: 'Credit Report', filename: 'X#_77349726_06-27.pdf', uploaded: '6/30/2025 11:32:46 AM', status: getRandomStatus(), source: 'Interface', expires: '10/27/2025' }
+      ],
+      'AUDIT': [
+        { name: 'SGFE Compliance Certificate', filename: 'Comp_ID_06302025022318.pdf', uploaded: '6/30/2025 2:23:18 PM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'USPS GeoCoder', filename: 'USPSGeoCoder.pdf', uploaded: '6/30/2025 2:34:50 PM', status: getRandomStatus(), source: 'Manually Add' }
+      ],
+      'DISC': [
+        { name: 'Loan Estimate', filename: 'ClosingCostWorksheet_RMA0.pdf', uploaded: '6/30/2025 2:31:42 PM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'DocuTech Pre-Disclosure Documents', filename: 'DocuTechPreDisclosure.pdf', uploaded: '7/1/2025 4:45:29 AM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Package', filename: 'Package.pdf', uploaded: '7/1/2025 4:45:29 AM', status: getRandomStatus(), source: 'Doc Prep E-' },
+        { name: 'Loan Estimate', filename: 'ClosingCostWorksheet_RMA0_1.pdf', uploaded: '7/1/2025 7:22:13 AM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Loan Estimate', filename: 'ClosingCostWorksheet_RMA0_2.pdf', uploaded: '7/1/2025 7:37:43 AM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Loan Estimate', filename: 'ClosingCostWorksheet_RMA0_3.pdf', uploaded: '7/1/2025 7:47:37 AM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Borrowers Certification and Authorization', filename: 'CertificationAuth.pdf', uploaded: '7/1/2025 5:08:52 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Loan Estimate', filename: 'ClosingCostWorksheet_RMA0_4.pdf', uploaded: '7/2/2025 10:49:06 AM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Package_2', filename: 'Package_2.pdf', uploaded: '7/2/2025 11:14:33 AM', status: getRandomStatus(), source: 'Doc Prep' },
+        { name: 'Package_3', filename: 'Package_3.pdf', uploaded: '7/2/2025 12:44:52 PM', status: getRandomStatus(), source: 'Doc Prep' },
+        { name: 'Package_4', filename: 'Package_4.pdf', uploaded: '7/2/2025 2:18:47 PM', status: getRandomStatus(), source: 'Doc Prep E-' },
+        { name: 'Initial Disclosures Unsigned', filename: 'InitialDisclosures.pdf', uploaded: '7/2/2025 2:19:26 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Privacy Notice', filename: 'PrivacyNotice.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Intent to Proceed with Application', filename: 'IntentToProceed.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Patriot Act - Information Disclosure', filename: 'PatriotActInfo.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Welcome Letter', filename: 'WelcomeLetter.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'ECOA Disclosure', filename: 'ECOANotice.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Mortgage Fraud', filename: 'FBIFraudWarning.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Loan Estimate', filename: 'LoanEstimate_Edward.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' }
+      ],
+      'PROP': [
+        { name: 'Purchase Agreement', filename: 'CONTRACT.pdf', uploaded: '6/30/2025 2:34:17 PM', status: getRandomStatus(), source: 'Manually Add', expires: '08/05/2025' }
+      ],
+      'MISC': [
+        { name: 'E-Sign Audit Trail', filename: 'AuditLog_1.pdf', uploaded: '7/1/2025 5:08:39 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'E-Sign Audit Trail', filename: 'AuditLog_2.pdf', uploaded: '7/1/2025 5:08:51 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'E-Sign Audit Trail', filename: 'AuditLog_3.pdf', uploaded: '7/1/2025 5:08:52 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'E-Sign Audit Trail', filename: 'AuditLog_4.pdf', uploaded: '7/2/2025 3:09:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'E-Sign Audit Trail', filename: 'AuditLog_5.pdf', uploaded: '7/2/2025 3:12:08 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Compliance Report', filename: 'ComplianceEase.pdf', uploaded: '7/2/2025 11:13:27 AM', status: getRandomStatus(), source: 'Interface' }
+      ],
+      'DOCS': [
+        { name: 'Fee Worksheet', filename: 'InitialCostWorksheet.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' }
+      ],
+      'GOV': [
+        { name: 'FHA Via Addendum to Uniform Residential Loan Application', filename: 'HUD_Addendum.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'FHA Real Estate Certification', filename: 'FHA_AmendatoryClause_Real.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'FHA Notice to Homebuyers', filename: 'ImportantNotice_Homebuyers.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'FHA For Your Protection', filename: 'ForYourProtection_GetHo.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'FHA Identity Certification', filename: 'FHA_IdentityCertificate.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'FHA Informed Consumer Choice Disclosure', filename: 'InformedConsumerChoice.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'FHA Mortgage Assumption Notice', filename: 'NoticeHomeowner_Assum.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' }
+      ],
+      'APP': [
+        { name: 'Loan Application', filename: '1003_UniformResidentialLoan.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: '1003 URLA', filename: '1003_Form.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' }
+      ]
+    };
+  };
+
+  // Handle document click - show storage modal for Missing, direct viewer for Found/Inactive
+  const handleDocumentClick = (e, doc) => {
+    e.preventDefault();
+
+    // Set the active document to show indicator icon
+    setActiveDocument(doc.documentType);
+
+    if (doc.status === 'Missing') {
+      setSelectedDocType(doc.documentType);
+      setShowDocStorageModal(true);
+      // Reset filters when opening modal
+      setDocStorageTypeFilter('');
+      setDocStorageCategoryFilter('');
+      // Initialize all categories as expanded
+      const allDocs = getAllLoanDocuments();
+      const expanded = {};
+      Object.keys(allDocs).forEach(cat => {
+        expanded[cat] = true;
+      });
+      setExpandedCategories(expanded);
+    } else if (doc.status === 'Found' || doc.status === 'Pending Review - Inactive') {
+      // For Found/Inactive docs, show direct document viewer with metadata
+      // In production, this would make an API call to fetch document details from EPS
+      const docDetails = {
+        documentType: doc.documentType,
+        category: doc.category,
+        status: doc.status,
+        filename: `${doc.documentType.replace(/\s+/g, '_')}_${subjectLoan}_${Date.now()}.pdf`,
+        created: new Date().toLocaleString(),
+        format: 'PDF',
+        location: `\\\\cmgmortgage.com\\BPRO.DATA\\${subjectLoan}\\${doc.documentType.replace(/\s+/g, '_')}.pdf`,
+        description: doc.documentType
+      };
+      setViewingDocument(docDetails);
+      // Initialize edited properties
+      setEditedDocProperties({
+        status: doc.status === 'Pending Review - Inactive' ? 'inactive' : doc.status === 'Found' ? 'approved' : 'not-reviewed',
+        documentName: docDetails.filename,
+        documentType: '',
+        expires: '',
+        description: docDetails.description,
+        tags: {
+          forReview: false,
+          firstTime: false
+        },
+        associatedCondition: '',
+        notes: ''
+      });
+      setShowDocViewer(true);
+    }
+  };
+
+  const toggleCategory = (category) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
+
+  const handleViewDocument = (doc, category) => {
+    const docDetails = { ...doc, category };
+    setViewingDocument(docDetails);
+    // Initialize edited properties with current document data
+    setEditedDocProperties({
+      status: doc.status || 'not-reviewed',
+      documentName: doc.filename || doc.name || '',
+      documentType: '',
+      expires: '',
+      description: '',
+      tags: {
+        forReview: false,
+        firstTime: false
+      },
+      associatedCondition: '',
+      notes: ''
+    });
+    setShowDocViewer(true);
+  };
+
+  // Save document property changes
+  const handleSaveDocumentProperties = async () => {
+    if (!editedDocProperties || !viewingDocument) return;
+
+    // TODO: In production, make API call to BytePro DBO via EPS API
+    // Example: await updateDocumentProperties(subjectLoan, viewingDocument.documentType, editedDocProperties);
+
+    console.log('📝 Saving document properties to EPS API:', {
+      loan: subjectLoan,
+      documentType: viewingDocument.documentType,
+      properties: editedDocProperties
+    });
+
+    // Convert dropdown values back to grid display format
+    const newGridStatus =
+      editedDocProperties.status === 'inactive' ? 'Pending Review - Inactive' :
+      editedDocProperties.status === 'approved' ? 'Found' :
+      editedDocProperties.status === 'rejected' ? 'Missing' :
+      editedDocProperties.status === 'pending' ? 'Pending Review - Inactive' :
+      'Missing';
+
+    // Update the stacking order with new status
+    const updatedStackingOrder = stackingOrder.map(doc => {
+      if (doc.documentType === viewingDocument.documentType) {
+        return {
+          ...doc,
+          status: newGridStatus
+        };
+      }
+      return doc;
+    });
+
+    setStackingOrder(updatedStackingOrder);
+
+    // Update the viewing document
+    setViewingDocument({
+      ...viewingDocument,
+      status: newGridStatus
+    });
+
+    // Show success message
+    setShowSaveSuccess(true);
+    setTimeout(() => {
+      setShowSaveSuccess(false);
+    }, 3000);
+
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+  };
+
+  // Get filtered documents for Document Storage Modal
+  const getFilteredStorageDocuments = () => {
+    const allDocs = getAllLoanDocuments();
+
+    // If no filters applied, return all documents
+    if (!docStorageTypeFilter && !docStorageCategoryFilter) {
+      return allDocs;
+    }
+
+    // Apply filters
+    const filtered = {};
+    Object.entries(allDocs).forEach(([category, docs]) => {
+      // Filter by category first
+      if (docStorageCategoryFilter && category !== docStorageCategoryFilter) {
+        return; // Skip this category
+      }
+
+      // Filter by status/type within the category
+      const filteredDocs = docStorageTypeFilter
+        ? docs.filter(doc => doc.status === docStorageTypeFilter)
+        : docs;
+
+      // Only include category if it has matching documents
+      if (filteredDocs.length > 0) {
+        filtered[category] = filteredDocs;
+      }
+    });
+
+    return filtered;
   };
 
   const getFilteredDocs = () => {
@@ -745,8 +1017,12 @@ const BoBSingleFlow = () => {
                         <td className="px-6 py-4">
                           <a
                             href={`#docs-manager?type=${encodeURIComponent(doc.documentType)}&loan=${encodeURIComponent(subjectLoan)}`}
-                            className="text-teal-600 hover:text-teal-800 font-medium underline text-xs"
+                            onClick={(e) => handleDocumentClick(e, doc)}
+                            className="text-teal-600 hover:text-teal-800 font-medium underline text-xs cursor-pointer flex items-center gap-2"
                           >
+                            {activeDocument === doc.documentType && (
+                              <Eye size={14} className="text-teal-600 flex-shrink-0" />
+                            )}
                             {doc.documentType}
                           </a>
                         </td>
@@ -788,8 +1064,8 @@ const BoBSingleFlow = () => {
       {isBuilding && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 w-96 text-center">
-            <Loader2 className="animate-spin mx-auto mb-4 text-teal-600" size={48} />
-            <h3 className="text-lg font-semibold mb-2">Building Bundle</h3>
+            <Loader2 className="animate-spin mx-auto mb-4 text-teal-600" size={40} />
+            <h3 className="text-base font-semibold mb-2">Building Bundle</h3>
             <p className="text-gray-600 text-xs">Please wait while your bundle is being created...</p>
           </div>
         </div>
@@ -800,8 +1076,8 @@ const BoBSingleFlow = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-96">
             <div className="flex items-center gap-3 mb-4">
-              <CheckCircle className="text-green-600" size={32} />
-              <h3 className="text-lg font-semibold">Bundle has been Created</h3>
+              <CheckCircle className="text-green-600" size={24} />
+              <h3 className="text-base font-semibold">Bundle has been Created</h3>
             </div>
             <p className="text-gray-600 mb-6 text-xs">
               Your bundle has been successfully created and is ready for download.
@@ -826,8 +1102,8 @@ const BoBSingleFlow = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-[500px]">
             <div className="flex items-center gap-3 mb-4">
-              <XCircle className="text-red-600" size={32} />
-              <h3 className="text-lg font-semibold">Build Failed</h3>
+              <XCircle className="text-red-600" size={24} />
+              <h3 className="text-base font-semibold">Build Failed</h3>
             </div>
             <div className="mb-6">
               <p className="text-gray-600 mb-3 text-xs">
@@ -858,11 +1134,54 @@ const BoBSingleFlow = () => {
         </div>
       )}
 
+      {/* Inactive Documents Warning Modal */}
+      {showInactiveWarning && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[500px]">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertTriangle className="text-yellow-600" size={24} />
+              <h3 className="text-base font-semibold">Inactive Documents Detected</h3>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700 mb-3 text-sm">
+                This bundle contains documents marked as <span className="font-semibold text-yellow-700">Inactive</span> that require review.
+              </p>
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
+                <p className="text-xs font-semibold text-yellow-800 mb-2">⚠️ Important Notice:</p>
+                <p className="text-xs text-yellow-700 mb-2">
+                  Inactive documents may not meet current compliance standards and could affect the validity of this bundle package.
+                </p>
+                <p className="text-xs text-yellow-700">
+                  {stackingOrder.filter(doc => doc.status === 'Pending Review - Inactive').length} inactive {stackingOrder.filter(doc => doc.status === 'Pending Review - Inactive').length === 1 ? 'document' : 'documents'} detected in this bundle.
+                </p>
+              </div>
+              <p className="text-gray-600 mt-4 text-xs">
+                Do you wish to proceed with building this bundle?
+              </p>
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowInactiveWarning(false)}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 font-medium text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={proceedWithBuild}
+                className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 font-medium text-xs"
+              >
+                Yes, Proceed Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Upload Document Modal */}
       {showUploadModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-[500px]">
-            <h3 className="text-lg font-semibold mb-4">Upload Supplemental Document</h3>
+            <h3 className="text-base font-semibold mb-4">Upload Supplemental Document</h3>
             <p className="text-xs text-gray-600 mb-4">Upload additional documents to supplement the bundle (PDF only)</p>
 
             <div className="mb-4">
@@ -930,6 +1249,733 @@ const BoBSingleFlow = () => {
               >
                 Upload File
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Document Storage Modal */}
+      {showDocStorageModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-20 z-50">
+          <div
+            className="bg-white rounded-lg w-[85%] max-w-6xl h-[85vh] flex flex-col shadow-2xl"
+            style={{
+              position: 'absolute',
+              left: `${modalPosition.x}px`,
+              top: `${modalPosition.y}px`,
+            }}
+          >
+            {/* Header - Draggable */}
+            <div
+              className="px-6 py-4 border-b flex items-center justify-between cursor-move bg-gray-50"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                const startX = e.clientX - modalPosition.x;
+                const startY = e.clientY - modalPosition.y;
+
+                const handleMouseMove = (e) => {
+                  setModalPosition({
+                    x: e.clientX - startX,
+                    y: e.clientY - startY
+                  });
+                };
+
+                const handleMouseUp = () => {
+                  document.removeEventListener('mousemove', handleMouseMove);
+                  document.removeEventListener('mouseup', handleMouseUp);
+                };
+
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+              }}
+            >
+              <h3 className="text-base font-semibold">Documents - Loan {subjectLoan}</h3>
+              <button
+                onClick={() => {
+                  setShowDocStorageModal(false);
+                  setPreviewDocument(null);
+                  setActiveDocument(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Controls Bar */}
+            <div className="px-6 py-3 border-b bg-gray-50 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <button className="text-xs text-teal-600 hover:text-teal-800 font-medium">
+                  Select All
+                </button>
+                <span className="text-gray-300">|</span>
+                <button className="text-xs text-teal-600 hover:text-teal-800 font-medium">
+                  Collapse All
+                </button>
+              </div>
+              <div className="flex items-center gap-3">
+                {/* Filter Icon Indicator - Highlights when filters are active */}
+                <div className="relative">
+                  <Filter
+                    size={16}
+                    className={`transition-colors ${
+                      docStorageTypeFilter || docStorageCategoryFilter
+                        ? 'text-teal-600'
+                        : 'text-gray-400'
+                    }`}
+                  />
+                  {(docStorageTypeFilter || docStorageCategoryFilter) && (
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-teal-600 rounded-full"></div>
+                  )}
+                </div>
+
+                <span className="text-xs text-gray-600">Filter by:</span>
+                <select
+                  className={`px-3 py-1 border rounded text-xs bg-white transition-colors ${
+                    docStorageTypeFilter
+                      ? 'border-teal-500 ring-1 ring-teal-200'
+                      : 'border-gray-300'
+                  }`}
+                  value={docStorageTypeFilter}
+                  onChange={(e) => setDocStorageTypeFilter(e.target.value)}
+                >
+                  <option value="">Select</option>
+                  <option value="approved">Approved</option>
+                  <option value="not-reviewed">Not Reviewed</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="pending">Pending Review</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+                <span className="text-xs text-gray-600 ml-2">Category:</span>
+                <select
+                  className={`px-3 py-1 border rounded text-xs bg-white transition-colors ${
+                    docStorageCategoryFilter
+                      ? 'border-teal-500 ring-1 ring-teal-200'
+                      : 'border-gray-300'
+                  }`}
+                  value={docStorageCategoryFilter}
+                  onChange={(e) => setDocStorageCategoryFilter(e.target.value)}
+                >
+                  <option value="">All</option>
+                  <option value="POST CLSNG">POST CLSNG</option>
+                  <option value="CRED">CRED</option>
+                  <option value="AUDIT">AUDIT</option>
+                  <option value="DISC">DISC</option>
+                  <option value="PROP">PROP</option>
+                  <option value="MISC">MISC</option>
+                  <option value="DOCS">DOCS</option>
+                  <option value="GOV">GOV</option>
+                  <option value="APP">APP</option>
+                </select>
+                <button
+                  className={`p-1 rounded transition-colors ${
+                    docStorageTypeFilter || docStorageCategoryFilter
+                      ? 'bg-teal-100 hover:bg-teal-200'
+                      : 'hover:bg-gray-200'
+                  }`}
+                  title={docStorageTypeFilter || docStorageCategoryFilter ? 'Clear Filters' : 'Refresh'}
+                  onClick={() => {
+                    setDocStorageTypeFilter('');
+                    setDocStorageCategoryFilter('');
+                  }}
+                >
+                  <RefreshCw
+                    size={14}
+                    className={docStorageTypeFilter || docStorageCategoryFilter ? 'text-teal-600' : 'text-gray-600'}
+                  />
+                </button>
+              </div>
+            </div>
+
+            {/* Split View: Documents Table & Preview */}
+            <div className="flex-1 flex overflow-hidden">
+              {/* Left Panel - Documents Table */}
+              <div style={{ width: `${splitPosition}%` }} className="flex flex-col border-r overflow-hidden">
+                <div className="flex-1 overflow-auto">
+                  <table className="w-full text-xs">
+                    <thead className="bg-gray-100 sticky top-0">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Status</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Category</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Type</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Description</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Expires</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Date/Time Created</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Format</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Source</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(getFilteredStorageDocuments()).map(([category, docs]) =>
+                        docs.map((doc, idx) => (
+                          <tr
+                            key={`${category}-${idx}`}
+                            className={`border-b cursor-pointer transition-colors ${
+                              previewDocument?.filename === doc.filename
+                                ? 'bg-teal-50'
+                                : 'hover:bg-gray-50'
+                            }`}
+                            onClick={() => setPreviewDocument({ ...doc, category })}
+                            onDoubleClick={() => handleViewDocument(doc, category)}
+                          >
+                            <td className="px-3 py-2">
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                doc.status === 'approved'
+                                  ? 'bg-green-100 text-green-800'
+                                  : doc.status === 'not-reviewed'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : doc.status === 'inactive'
+                                  ? 'bg-gray-100 text-gray-800'
+                                  : doc.status === 'rejected'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-orange-100 text-orange-800'
+                              }`}>
+                                {doc.status === 'approved' ? 'Approved' :
+                                 doc.status === 'not-reviewed' ? 'Not Reviewed' :
+                                 doc.status === 'inactive' ? 'Inactive' :
+                                 doc.status === 'rejected' ? 'Rejected' :
+                                 doc.status === 'pending' ? 'Pending Review' : doc.status}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-gray-700">{category}</td>
+                            <td className="px-3 py-2 text-gray-700">{doc.name}</td>
+                            <td className="px-3 py-2 text-teal-600 hover:text-teal-800 font-medium">{doc.filename}</td>
+                            <td className="px-3 py-2 text-red-600">{doc.expires || ''}</td>
+                            <td className="px-3 py-2 text-gray-700">{doc.uploaded}</td>
+                            <td className="px-3 py-2 text-gray-700">PDF</td>
+                            <td className="px-3 py-2 text-gray-700">{doc.source}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Resizable Divider */}
+              <div
+                className="w-1 bg-gray-300 hover:bg-teal-500 cursor-col-resize flex-shrink-0 transition-colors"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  const startX = e.clientX;
+                  const startWidth = splitPosition;
+                  const container = e.currentTarget.parentElement;
+
+                  const handleMouseMove = (moveEvent) => {
+                    if (container) {
+                      const containerWidth = container.offsetWidth;
+                      const deltaX = moveEvent.clientX - startX;
+                      const deltaPercent = (deltaX / containerWidth) * 100;
+                      const newWidth = Math.min(Math.max(30, startWidth + deltaPercent), 80);
+                      setSplitPosition(newWidth);
+                    }
+                  };
+
+                  const handleMouseUp = () => {
+                    document.removeEventListener('mousemove', handleMouseMove);
+                    document.removeEventListener('mouseup', handleMouseUp);
+                  };
+
+                  document.addEventListener('mousemove', handleMouseMove);
+                  document.addEventListener('mouseup', handleMouseUp);
+                }}
+              />
+
+              {/* Right Panel - Document Preview */}
+              <div className="flex-1 bg-gray-50 overflow-auto">
+                {previewDocument ? (
+                  <div className="h-full flex flex-col">
+                    {/* Preview Header */}
+                    <div className="bg-white border-b px-4 py-3">
+                      <h4 className="text-sm font-semibold text-gray-800 mb-2">
+                        {previewDocument.name}
+                      </h4>
+                      <div className="space-y-1 text-xs text-gray-600">
+                        <p><strong>Filename:</strong> {previewDocument.filename}</p>
+                        <p><strong>Category:</strong> {previewDocument.category}</p>
+                        <p><strong>Status:</strong>{' '}
+                          <span className={`px-2 py-0.5 rounded font-medium ${
+                            previewDocument.status === 'approved'
+                              ? 'bg-green-100 text-green-800'
+                              : previewDocument.status === 'not-reviewed'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {previewDocument.status === 'approved' ? 'Approved' :
+                             previewDocument.status === 'not-reviewed' ? 'Not Reviewed' :
+                             previewDocument.status === 'inactive' ? 'Inactive' : previewDocument.status}
+                          </span>
+                        </p>
+                        <p><strong>Uploaded:</strong> {previewDocument.uploaded}</p>
+                        <p><strong>Source:</strong> {previewDocument.source}</p>
+                        {previewDocument.expires && (
+                          <p className="text-red-600"><strong>Expires:</strong> {previewDocument.expires}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Preview Actions */}
+                    <div className="bg-white border-b px-4 py-2 flex gap-2">
+                      <button
+                        onClick={() => handleViewDocument(previewDocument, previewDocument.category)}
+                        className="px-3 py-1.5 bg-teal-600 text-white rounded hover:bg-teal-700 text-xs font-medium"
+                      >
+                        Open Full View
+                      </button>
+                      <button
+                        onClick={() => alert(`Downloading ${previewDocument.filename}...`)}
+                        className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs font-medium"
+                      >
+                        Download
+                      </button>
+                    </div>
+
+                    {/* Preview Area */}
+                    <div className="flex-1 p-4 flex items-center justify-center">
+                      <div className="bg-white shadow-lg rounded p-6 max-w-sm text-center">
+                        <File size={48} className="text-gray-400 mx-auto mb-3" />
+                        <p className="text-gray-700 text-xs font-medium mb-1">
+                          {previewDocument.name}
+                        </p>
+                        <p className="text-gray-500 text-xs mb-3">
+                          {previewDocument.filename}
+                        </p>
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
+                          <p className="font-semibold mb-1">📄 Document Preview</p>
+                          <p className="text-xs">Click "Open Full View" to see complete document with metadata panel.</p>
+                          <p className="text-xs mt-2">Double-click table row for quick access.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center p-6">
+                    <div className="text-center text-gray-400">
+                      <File size={48} className="mx-auto mb-3" />
+                      <p className="text-sm font-medium mb-1">No Document Selected</p>
+                      <p className="text-xs">Click on any document row to preview</p>
+                      <p className="text-xs mt-1">Double-click to open full view</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-3 border-t bg-gray-50 flex justify-between items-center">
+              <p className="text-xs text-gray-600">
+                {(() => {
+                  const filteredDocs = getFilteredStorageDocuments();
+                  const filteredCount = Object.values(filteredDocs).reduce((sum, docs) => sum + docs.length, 0);
+                  const totalCount = Object.values(getAllLoanDocuments()).reduce((sum, docs) => sum + docs.length, 0);
+                  return docStorageTypeFilter || docStorageCategoryFilter
+                    ? `Showing ${filteredCount} of ${totalCount} Documents`
+                    : `Total Documents: ${totalCount}`;
+                })()}
+              </p>
+              <button
+                onClick={() => {
+                  setShowDocStorageModal(false);
+                  setPreviewDocument(null);
+                  setActiveDocument(null);
+                  setDocStorageTypeFilter('');
+                  setDocStorageCategoryFilter('');
+                }}
+                className="px-4 py-2 bg-teal-700 text-white rounded hover:bg-teal-800 font-medium text-xs"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Document Viewer Modal */}
+      {showDocViewer && viewingDocument && (
+        <div className="fixed inset-0 bg-black bg-opacity-20 z-[60]">
+          <div
+            className="bg-white rounded-lg w-[85%] max-w-6xl h-[85vh] flex flex-col shadow-2xl"
+            style={{
+              position: 'absolute',
+              left: `${modalPosition.x}px`,
+              top: `${modalPosition.y}px`,
+            }}
+          >
+            {/* Header - Draggable */}
+            <div
+              className="px-6 py-3 border-b flex items-center justify-between cursor-move bg-gray-50"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                const startX = e.clientX - modalPosition.x;
+                const startY = e.clientY - modalPosition.y;
+
+                const handleMouseMove = (e) => {
+                  setModalPosition({
+                    x: e.clientX - startX,
+                    y: e.clientY - startY
+                  });
+                };
+
+                const handleMouseUp = () => {
+                  document.removeEventListener('mousemove', handleMouseMove);
+                  document.removeEventListener('mouseup', handleMouseUp);
+                };
+
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+              }}
+            >
+              <h3 className="text-sm font-semibold text-gray-800">
+                {viewingDocument.filename || viewingDocument.name}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowDocViewer(false);
+                  setActiveDocument(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Main Content - Split Layout */}
+            <div className="flex-1 flex overflow-hidden bg-gray-50">
+              {/* Left Panel - Document Properties */}
+              <div style={{ width: `${docViewerSplitPosition}%` }} className="border-r bg-white overflow-y-auto flex-shrink-0">
+                {/* Header */}
+                <div className="px-4 py-3 border-b">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-semibold text-gray-800">Document Properties</h4>
+                    <ChevronDown size={14} className="text-gray-500" />
+                  </div>
+                </div>
+
+                {/* Form Fields */}
+                <div className="px-4 py-3 space-y-3">
+                  {/* Document Status */}
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Document Status</label>
+                    <select
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-teal-500"
+                      value={editedDocProperties?.status || 'not-reviewed'}
+                      onChange={(e) => setEditedDocProperties(prev => ({ ...prev, status: e.target.value }))}
+                    >
+                      <option value="not-reviewed">Not Reviewed</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                      <option value="pending">Pending Review</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+
+                  {/* Document Name */}
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Document Name</label>
+                    <input
+                      type="text"
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-teal-500"
+                      value={editedDocProperties?.documentName || ''}
+                      onChange={(e) => setEditedDocProperties(prev => ({ ...prev, documentName: e.target.value }))}
+                    />
+                  </div>
+
+                  {/* Document Type */}
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Document Type</label>
+                    <select
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-teal-500"
+                      value={editedDocProperties?.documentType || ''}
+                      onChange={(e) => setEditedDocProperties(prev => ({ ...prev, documentType: e.target.value }))}
+                    >
+                      <option value="">Select Type</option>
+                      <option value="verification-of-employment">Verification of Employment</option>
+                      <option value="w2">W-2</option>
+                      <option value="pay-stubs">Pay Stubs</option>
+                      <option value="bank-statements">Bank Statements</option>
+                      <option value="tax-returns">Tax Returns</option>
+                      <option value="credit-report">Credit Report</option>
+                      <option value="appraisal">Appraisal</option>
+                      <option value="title-policy">Title Policy</option>
+                      <option value="insurance">Insurance</option>
+                      <option value="loan-estimate">Loan Estimate</option>
+                      <option value="closing-disclosure">Closing Disclosure</option>
+                      <option value="purchase-agreement">Purchase Agreement</option>
+                      <option value="1003">1003 Application</option>
+                    </select>
+                  </div>
+
+                  {/* Document Expires */}
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Document Expires</label>
+                    <input
+                      type="date"
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-teal-500"
+                      value={editedDocProperties?.expires || ''}
+                      onChange={(e) => setEditedDocProperties(prev => ({ ...prev, expires: e.target.value }))}
+                    />
+                  </div>
+
+                  {/* Document Description */}
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Document Description</label>
+                    <textarea
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs bg-white resize-none focus:outline-none focus:ring-1 focus:ring-teal-500"
+                      rows={3}
+                      placeholder="Type comment here"
+                      value={editedDocProperties?.description || ''}
+                      onChange={(e) => setEditedDocProperties(prev => ({ ...prev, description: e.target.value }))}
+                    />
+                  </div>
+
+                  {/* Tags Section */}
+                  <div className="pt-2 space-y-1.5">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="rounded text-teal-600 w-3 h-3"
+                        checked={editedDocProperties?.tags?.forReview || false}
+                        onChange={(e) => setEditedDocProperties(prev => ({
+                          ...prev,
+                          tags: { ...prev.tags, forReview: e.target.checked }
+                        }))}
+                      />
+                      <span className="text-xs text-gray-700">For Review</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="rounded text-teal-600 w-3 h-3"
+                        checked={editedDocProperties?.tags?.firstTime || false}
+                        onChange={(e) => setEditedDocProperties(prev => ({
+                          ...prev,
+                          tags: { ...prev.tags, firstTime: e.target.checked }
+                        }))}
+                      />
+                      <span className="text-xs text-gray-700">FirstTime</span>
+                    </label>
+                    <button className="text-xs text-teal-600 hover:text-teal-800 font-medium flex items-center gap-1 mt-1">
+                      <span className="text-base">+</span> Add Tag
+                    </button>
+                  </div>
+                </div>
+
+                {/* Associated Conditions */}
+                <div className="border-t">
+                  <div className="px-4 py-2 bg-gray-50 border-b">
+                    <div className="flex items-center justify-between">
+                      <h5 className="text-xs font-semibold text-gray-800">Associated Conditions</h5>
+                      <ChevronDown size={12} className="text-gray-500" />
+                    </div>
+                  </div>
+                  <div className="px-4 py-3">
+                    <label className="block text-xs text-gray-600 mb-1">Associated Condition</label>
+                    <select
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-teal-500"
+                      value={editedDocProperties?.associatedCondition || ''}
+                      onChange={(e) => setEditedDocProperties(prev => ({ ...prev, associatedCondition: e.target.value }))}
+                    >
+                      <option value="">Select</option>
+                      <option value="prior-to-docs">Prior to Docs</option>
+                      <option value="prior-to-funding">Prior to Funding</option>
+                      <option value="prior-to-closing">Prior to Closing</option>
+                      <option value="post-closing">Post Closing</option>
+                      <option value="cleared">Cleared</option>
+                      <option value="outstanding">Outstanding</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div className="border-t">
+                  <div className="px-4 py-2 bg-gray-50 border-b">
+                    <div className="flex items-center justify-between">
+                      <h5 className="text-xs font-semibold text-gray-800">Notes</h5>
+                      <ChevronDown size={12} className="text-gray-500" />
+                    </div>
+                  </div>
+                  <div className="px-4 py-3">
+                    <textarea
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs bg-white resize-none focus:outline-none focus:ring-1 focus:ring-teal-500"
+                      rows={4}
+                      placeholder="Type notes here"
+                      value={editedDocProperties?.notes || ''}
+                      onChange={(e) => setEditedDocProperties(prev => ({ ...prev, notes: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Resizable Divider */}
+              <div
+                className="w-1 bg-gray-300 hover:bg-teal-500 cursor-col-resize flex-shrink-0 transition-colors"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  const startX = e.clientX;
+                  const startWidth = docViewerSplitPosition;
+                  const container = e.currentTarget.parentElement;
+
+                  const handleMouseMove = (moveEvent) => {
+                    if (container) {
+                      const containerWidth = container.offsetWidth;
+                      const deltaX = moveEvent.clientX - startX;
+                      const deltaPercent = (deltaX / containerWidth) * 100;
+                      const newWidth = Math.min(Math.max(15, startWidth + deltaPercent), 40);
+                      setDocViewerSplitPosition(newWidth);
+                    }
+                  };
+
+                  const handleMouseUp = () => {
+                    document.removeEventListener('mousemove', handleMouseMove);
+                    document.removeEventListener('mouseup', handleMouseUp);
+                  };
+
+                  document.addEventListener('mousemove', handleMouseMove);
+                  document.addEventListener('mouseup', handleMouseUp);
+                }}
+              />
+
+              {/* Right Panel - PDF Viewer */}
+              <div className="flex-1 flex flex-col">
+                {/* Toolbar */}
+                <div className="bg-white border-b px-3 py-2 flex items-center gap-1">
+                  {/* Document Thumbnail Preview */}
+                  <div className="mr-3">
+                    <div className="w-12 h-16 bg-gray-200 rounded border border-gray-300 flex items-center justify-center">
+                      <File size={20} className="text-gray-500" />
+                    </div>
+                  </div>
+
+                  <div className="h-6 w-px bg-gray-300 mx-1"></div>
+
+                  {/* Zoom Controls */}
+                  <button className="p-1.5 hover:bg-gray-100 rounded" title="Zoom Out">
+                    <span className="text-gray-600 text-sm font-bold">-</span>
+                  </button>
+                  <span className="text-xs text-gray-600 px-2">100%</span>
+                  <button className="p-1.5 hover:bg-gray-100 rounded" title="Zoom In">
+                    <span className="text-gray-600 text-sm font-bold">+</span>
+                  </button>
+
+                  <div className="h-6 w-px bg-gray-300 mx-1"></div>
+
+                  {/* Page Navigation */}
+                  <div className="flex items-center gap-2 px-2">
+                    <span className="text-xs text-gray-600">1 / 1</span>
+                  </div>
+
+                  <div className="h-6 w-px bg-gray-300 mx-1"></div>
+
+                  {/* Document Tools */}
+                  <button className="p-1.5 hover:bg-gray-100 rounded" title="Highlight">
+                    <div className="w-5 h-5 bg-yellow-200 rounded"></div>
+                  </button>
+                  <button className="p-1.5 hover:bg-gray-100 rounded" title="Draw">
+                    <div className="w-5 h-5 flex items-center justify-center">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M2 14 L14 2" />
+                      </svg>
+                    </div>
+                  </button>
+                  <button className="p-1.5 hover:bg-gray-100 rounded" title="Text">
+                    <div className="w-5 h-5 flex items-center justify-center text-xs font-bold text-gray-600">A</div>
+                  </button>
+                  <button className="p-1.5 hover:bg-gray-100 rounded" title="Square">
+                    <div className="w-5 h-5 border-2 border-gray-600 rounded"></div>
+                  </button>
+                  <button className="p-1.5 hover:bg-gray-100 rounded" title="Download">
+                    <Download size={16} className="text-gray-600" />
+                  </button>
+                  <button className="p-1.5 hover:bg-gray-100 rounded" title="More Options">
+                    <div className="w-5 h-5 flex items-center justify-center text-gray-600">...</div>
+                  </button>
+
+                  <div className="h-6 w-px bg-gray-300 mx-1"></div>
+
+                  {/* Remove Button */}
+                  <button className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded flex items-center gap-1">
+                    <X size={12} />
+                    Remove
+                  </button>
+                </div>
+
+                {/* PDF Preview Area */}
+                <div className="flex-1 overflow-auto bg-gray-100">
+                  <div className="p-6">
+                    <div className="bg-white shadow-lg max-w-4xl mx-auto min-h-[900px] p-8">
+                      {/* Simulated PDF Content */}
+                      <div className="flex flex-col items-center justify-center h-full">
+                        <File size={64} className="text-gray-400 mb-4" />
+                        <p className="text-gray-700 text-base font-semibold mb-2">
+                          {viewingDocument.filename || viewingDocument.name || 'Document Preview'}
+                        </p>
+                        <p className="text-gray-500 text-xs mb-6">PDF Document</p>
+                        <div className="space-y-2 text-xs text-gray-600 text-center max-w-md">
+                          <p><strong>Document Type:</strong> {viewingDocument.documentType || 'Document'}</p>
+                          <p><strong>Category:</strong> {viewingDocument.category || 'General'}</p>
+                          <p><strong>Status:</strong> {viewingDocument.status || 'Found'}</p>
+                          <p><strong>Format:</strong> {viewingDocument.format || 'PDF'}</p>
+                        </div>
+                        <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800 max-w-lg">
+                          <p className="font-semibold mb-2">📄 EPS Document Viewer</p>
+                          <p>In production, this would display the actual PDF document fetched from BytePro dbo via EPS API call. The document would be rendered using a PDF viewer library like PDF.js with full zoom, pan, and annotation capabilities.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-3 border-t bg-gray-50">
+              {/* Success Message - Full Width */}
+              {showSaveSuccess && (
+                <div className="mb-3 flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded">
+                  <CheckCircle size={16} className="text-green-600" />
+                  <span className="text-xs text-green-700 font-medium">Changes saved successfully!</span>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex justify-between items-center">
+                <button className="text-xs text-teal-600 hover:text-teal-800 font-medium flex items-center gap-1">
+                  <File size={14} />
+                  Save/Add Document Split
+                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowDocViewer(false);
+                      setActiveDocument(null);
+                      setEditedDocProperties(null);
+                      setShowSaveSuccess(false);
+                    }}
+                    className="px-6 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 font-medium text-xs"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveDocumentProperties}
+                    className="px-6 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 font-medium text-xs"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowDocViewer(false);
+                      setActiveDocument(null);
+                      setEditedDocProperties(null);
+                      setShowSaveSuccess(false);
+                    }}
+                    className="px-6 py-2 bg-teal-700 text-white rounded hover:bg-teal-800 font-medium text-xs"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
