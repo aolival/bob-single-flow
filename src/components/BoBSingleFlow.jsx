@@ -651,8 +651,8 @@ const BoBSingleFlow = () => {
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
       <div className="bg-white border-b px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div className="flex items-center">
+          <svg width="85" height="40" viewBox="0 0 85 40" fill="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="clearGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" style={{stopColor: '#67E8F9', stopOpacity: 1}} />
@@ -663,6 +663,7 @@ const BoBSingleFlow = () => {
             <text x="0" y="30" fontSize="32" fontWeight="700" fill="url(#clearGradient)" fontFamily="system-ui, -apple-system, sans-serif">C</text>
             <text x="22" y="30" fontSize="32" fontWeight="700" fill="#374151" fontFamily="system-ui, -apple-system, sans-serif">lear</text>
           </svg>
+          <span className="text-black text-2xl font-bold ml-2">- BoB Manager</span>
         </div>
         <div className="relative">
           <button
@@ -677,7 +678,6 @@ const BoBSingleFlow = () => {
                 <button
                   onClick={() => {
                     setShowUserDropdown(false);
-                    // Handle My Account action
                     alert('My Account clicked');
                   }}
                   className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
@@ -687,7 +687,6 @@ const BoBSingleFlow = () => {
                 <button
                   onClick={() => {
                     setShowUserDropdown(false);
-                    // Handle Sign Out action
                     alert('Sign Out clicked');
                   }}
                   className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
@@ -698,7 +697,6 @@ const BoBSingleFlow = () => {
                 <button
                   onClick={() => {
                     setShowUserDropdown(false);
-                    // Navigate to Bulk Bundle Manager
                     window.location.href = 'http://localhost:5173';
                   }}
                   className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
@@ -708,12 +706,11 @@ const BoBSingleFlow = () => {
                 <button
                   onClick={() => {
                     setShowUserDropdown(false);
-                    // Navigate to Doctor Bob (placeholder URL)
-                    alert('Doctor Bob platform URL needed');
+                    window.location.href = 'http://localhost:5175';
                   }}
                   className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
                 >
-                  Switch to Doctor Bob
+                  Switch to Doctor BoB
                 </button>
               </div>
             </div>
@@ -722,8 +719,8 @@ const BoBSingleFlow = () => {
       </div>
 
       <div className="max-w-7xl mx-auto p-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">
-          Bundle Builder - Single Loan Delivery
+        <h1 className="text-xl font-bold text-gray-800 mb-6">
+          BoB (Builder of Bundles) | Single Loan Delivery
         </h1>
 
         {/* Selection Section */}
@@ -828,13 +825,7 @@ const BoBSingleFlow = () => {
 
             {/* Action Buttons - Show when bundle is selected */}
             {loanValidated && bundleName && (
-              <div className="flex justify-center space-x-4 mt-6">
-                <button
-                  onClick={handleStartNew}
-                  className="px-4 py-2 bg-teal-100 text-teal-700 rounded hover:bg-teal-200 font-medium text-xs"
-                >
-                  Start New Bundle
-                </button>
+              <div className="max-w-3xl flex justify-end space-x-4 mt-6">
                 <button
                   onClick={handleLoadStackingOrder}
                   disabled={isLoadingDocuments || fieldsLocked}
@@ -848,6 +839,12 @@ const BoBSingleFlow = () => {
                   ) : (
                     'Build Bundle'
                   )}
+                </button>
+                <button
+                  onClick={handleStartNew}
+                  className="px-4 py-2 bg-teal-100 text-teal-700 rounded hover:bg-teal-200 font-medium text-xs"
+                >
+                  Start New Bundle
                 </button>
               </div>
             )}
@@ -929,6 +926,13 @@ const BoBSingleFlow = () => {
                 </div>
 
                 <div className="flex items-center space-x-4">
+                  <button
+                    onClick={() => setShowDocStorageModal(true)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-teal-100 text-teal-700 rounded hover:bg-teal-200 font-medium text-xs"
+                  >
+                    <File size={14} />
+                    <span>View Stored Docs</span>
+                  </button>
                   <label className="flex items-center space-x-2 text-xs text-gray-700">
                     <input
                       type="checkbox"
