@@ -701,7 +701,7 @@ const BoBSingleFlow = () => {
                   }}
                   className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
                 >
-                  Switch to Bulk Bundle Manager
+                  Switch to BoB - Bulk Delivery
                 </button>
                 <button
                   onClick={() => {
@@ -710,7 +710,16 @@ const BoBSingleFlow = () => {
                   }}
                   className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
                 >
-                  Switch to Doctor BoB
+                  Switch to Doctor BoB - Single Loan
+                </button>
+                <button
+                  onClick={() => {
+                    setShowUserDropdown(false);
+                    window.location.href = 'http://localhost:5180';
+                  }}
+                  className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                >
+                  Switch to Doctor BoB - Bulk Delivery
                 </button>
               </div>
             </div>
