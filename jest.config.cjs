@@ -28,6 +28,22 @@ module.exports = {
     '!tests/helpers/**'
   ],
 
+  // Coverage reporters for Azure DevOps
+  coverageReporters: ['text', 'cobertura', 'html'],
+
+  // Test reporters for Azure DevOps
+  reporters: [
+    'default',
+    ['jest-junit', {
+      outputDirectory: './test-results',
+      outputName: 'junit.xml',
+      classNameTemplate: '{classname}',
+      titleTemplate: '{title}',
+      ancestorSeparator: ' › ',
+      usePathForSuiteName: true
+    }]
+  ],
+
   // Verbose output
   verbose: true,
 

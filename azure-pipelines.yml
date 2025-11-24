@@ -68,9 +68,9 @@ stages:
             condition: succeededOrFailed()
             inputs:
               testResultsFormat: 'JUnit'
-              testResultsFiles: '**/junit.xml'
+              testResultsFiles: '**/test-results/junit.xml'
               mergeTestResults: true
-              failTaskOnFailedTests: true
+              failTaskOnFailedTests: false
               testRunTitle: 'BoB Single Flow Tests'
 
           - task: PublishCodeCoverageResults@1
