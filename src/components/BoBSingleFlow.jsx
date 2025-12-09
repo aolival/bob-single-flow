@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, Download, CheckCircle, XCircle, Loader2, Upload, File, X, Search, ChevronDown, ChevronRight, Lock, Eye, Filter, AlertTriangle } from 'lucide-react';
 import { getLoanDocumentStatus } from '../services/epsDocumentApi';
+import DocumentTemplateSelector from './documentTemplates/DocumentTemplateSelector';
 
 const BoBSingleFlow = () => {
   const [subjectLoan, setSubjectLoan] = useState('');
@@ -40,6 +41,7 @@ const BoBSingleFlow = () => {
   const [showInactiveWarning, setShowInactiveWarning] = useState(false); // Warning modal for inactive documents
   const [editedDocProperties, setEditedDocProperties] = useState(null); // Track edited document properties
   const [showSaveSuccess, setShowSaveSuccess] = useState(false); // Show success message after save
+  const [showBundlePreview, setShowBundlePreview] = useState(false); // Show bundled PDF preview
 
   // Read loan number and bundle name from URL parameters on component mount
   useEffect(() => {
@@ -163,6 +165,17 @@ const BoBSingleFlow = () => {
         } else if (index === possibleFindIndex) {
           status = 'Pending Review - Inactive';
           foundCount = 1;
+          // 25% chance of having multiple inactive documents found (2 or 3)
+          const hasMultiple = Math.random() < 0.25;
+          if (hasMultiple) {
+            foundCount = Math.random() < 0.5 ? 2 : 3;
+          }
+        } else if (status === 'Found') {
+          // 25% chance of having multiple documents found (2 or 3)
+          const hasMultiple = Math.random() < 0.25;
+          if (hasMultiple) {
+            foundCount = Math.random() < 0.5 ? 2 : 3;
+          }
         }
 
         return {
@@ -208,6 +221,17 @@ const BoBSingleFlow = () => {
       } else if (inactiveIndices.has(index)) {
         status = 'Pending Review - Inactive';
         foundCountValue = 1;
+        // 25% chance of having multiple inactive documents found (2 or 3)
+        const hasMultiple = Math.random() < 0.25;
+        if (hasMultiple) {
+          foundCountValue = Math.random() < 0.5 ? 2 : 3;
+        }
+      } else if (status === 'Found') {
+        // 25% chance of having multiple documents found (2 or 3)
+        const hasMultiple = Math.random() < 0.25;
+        if (hasMultiple) {
+          foundCountValue = Math.random() < 0.5 ? 2 : 3;
+        }
       }
 
       return {
@@ -333,9 +357,8 @@ const BoBSingleFlow = () => {
   };
 
   const handleDownloadBundle = () => {
-    // Simulate download
-    alert(`Downloading: ${pdfBundleName}`);
-    // In production, this would trigger actual PDF download from dbo.Bundle.ServerFolderName
+    // Show the bundled PDF preview with all documents in stacking order
+    setShowBundlePreview(true);
   };
 
   const handleLoanNumberValidation = () => {
@@ -391,77 +414,145 @@ const BoBSingleFlow = () => {
     };
 
     return {
-      'POST CLSNG': [
-        { name: 'Final Title Policy', filename: 'FinalTitlePolicy.pdf', uploaded: '10/9/2025 12:14:20 PM', status: getRandomStatus(), source: 'Manually Add' },
-        { name: 'Recorded Security Instrument', filename: 'RecordedSecurity.pdf', uploaded: '10/9/2025 12:14:21 PM', status: getRandomStatus(), source: 'Manually Add' },
-        { name: 'Servicing Goodbye Letter', filename: 'ServicingGoodbye.pdf', uploaded: '9/11/2025 2:30:55 PM', status: getRandomStatus(), source: 'Manually Add' }
+      'Application': [
+        { name: '1003 Application', filename: '1003_URLA_Johnson_Edward_20250627.pdf', uploaded: '6/27/2025 9:15:23 AM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: '1003 URLA', filename: 'UniformResidentialLoanApp_1.pdf', uploaded: '6/27/2025 9:15:24 AM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: '1003 URLA - Updated', filename: 'UniformResidentialLoanApp_2_REVISED.pdf', uploaded: '6/30/2025 3:22:11 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Borrower Authorization', filename: 'BorrowerAuth_Consent_20250627.pdf', uploaded: '6/27/2025 9:16:05 AM', status: getRandomStatus(), source: 'E-Sign Import' }
       ],
-      'CRED': [
-        { name: 'Credit Report', filename: 'X#_77349726_06-27.pdf', uploaded: '6/30/2025 11:32:46 AM', status: getRandomStatus(), source: 'Interface', expires: '10/27/2025' }
+      'Credit': [
+        { name: 'Credit Report', filename: 'TriMerge_Credit_77349726_20250627.pdf', uploaded: '6/27/2025 11:32:46 AM', status: getRandomStatus(), source: 'Interface', expires: '10/27/2025' },
+        { name: 'Credit Report - Borrower', filename: 'Experian_Report_Johnson_Edward.pdf', uploaded: '6/27/2025 11:33:12 AM', status: getRandomStatus(), source: 'Interface', expires: '10/27/2025' },
+        { name: 'Credit Report - Co-Borrower', filename: 'Experian_Report_Johnson_Sarah.pdf', uploaded: '6/27/2025 11:33:45 AM', status: getRandomStatus(), source: 'Interface', expires: '10/27/2025' },
+        { name: 'Credit Supplement', filename: 'CreditSupplement_PaymentHistory.pdf', uploaded: '6/28/2025 2:14:33 PM', status: getRandomStatus(), source: 'Manually Add' }
       ],
-      'AUDIT': [
-        { name: 'SGFE Compliance Certificate', filename: 'Comp_ID_06302025022318.pdf', uploaded: '6/30/2025 2:23:18 PM', status: getRandomStatus(), source: 'Interface' },
-        { name: 'USPS GeoCoder', filename: 'USPSGeoCoder.pdf', uploaded: '6/30/2025 2:34:50 PM', status: getRandomStatus(), source: 'Manually Add' }
+      'Property': [
+        { name: 'Appraisal', filename: 'Appraisal_Report_1456_Maple_St_20250628.pdf', uploaded: '6/28/2025 4:45:17 PM', status: getRandomStatus(), source: 'Interface', expires: '12/28/2025' },
+        { name: 'Appraisal - URAR Form 1004', filename: 'URAR_1004_Property_Valuation.pdf', uploaded: '6/28/2025 4:45:18 PM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Purchase Contract', filename: 'PurchaseAgreement_1456_Maple_St.pdf', uploaded: '6/25/2025 2:34:17 PM', status: getRandomStatus(), source: 'Manually Add', expires: '08/25/2025' },
+        { name: 'Property Disclosure', filename: 'SellerDisclosure_PropertyCondition.pdf', uploaded: '6/25/2025 2:35:08 PM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Home Inspection Report', filename: 'HomeInspection_Report_20250626.pdf', uploaded: '6/26/2025 1:22:44 PM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Pest Inspection', filename: 'PestInspection_Termite_Report.pdf', uploaded: '6/26/2025 3:18:29 PM', status: getRandomStatus(), source: 'Manually Add' }
       ],
-      'DISC': [
-        { name: 'Loan Estimate', filename: 'ClosingCostWorksheet_RMA0.pdf', uploaded: '6/30/2025 2:31:42 PM', status: getRandomStatus(), source: 'Interface' },
-        { name: 'DocuTech Pre-Disclosure Documents', filename: 'DocuTechPreDisclosure.pdf', uploaded: '7/1/2025 4:45:29 AM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'Package', filename: 'Package.pdf', uploaded: '7/1/2025 4:45:29 AM', status: getRandomStatus(), source: 'Doc Prep E-' },
-        { name: 'Loan Estimate', filename: 'ClosingCostWorksheet_RMA0_1.pdf', uploaded: '7/1/2025 7:22:13 AM', status: getRandomStatus(), source: 'Interface' },
-        { name: 'Loan Estimate', filename: 'ClosingCostWorksheet_RMA0_2.pdf', uploaded: '7/1/2025 7:37:43 AM', status: getRandomStatus(), source: 'Interface' },
-        { name: 'Loan Estimate', filename: 'ClosingCostWorksheet_RMA0_3.pdf', uploaded: '7/1/2025 7:47:37 AM', status: getRandomStatus(), source: 'Interface' },
-        { name: 'Borrowers Certification and Authorization', filename: 'CertificationAuth.pdf', uploaded: '7/1/2025 5:08:52 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'Loan Estimate', filename: 'ClosingCostWorksheet_RMA0_4.pdf', uploaded: '7/2/2025 10:49:06 AM', status: getRandomStatus(), source: 'Interface' },
-        { name: 'Package_2', filename: 'Package_2.pdf', uploaded: '7/2/2025 11:14:33 AM', status: getRandomStatus(), source: 'Doc Prep' },
-        { name: 'Package_3', filename: 'Package_3.pdf', uploaded: '7/2/2025 12:44:52 PM', status: getRandomStatus(), source: 'Doc Prep' },
-        { name: 'Package_4', filename: 'Package_4.pdf', uploaded: '7/2/2025 2:18:47 PM', status: getRandomStatus(), source: 'Doc Prep E-' },
-        { name: 'Initial Disclosures Unsigned', filename: 'InitialDisclosures.pdf', uploaded: '7/2/2025 2:19:26 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'Privacy Notice', filename: 'PrivacyNotice.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'Intent to Proceed with Application', filename: 'IntentToProceed.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'Patriot Act - Information Disclosure', filename: 'PatriotActInfo.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'Welcome Letter', filename: 'WelcomeLetter.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'ECOA Disclosure', filename: 'ECOANotice.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'Mortgage Fraud', filename: 'FBIFraudWarning.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'Loan Estimate', filename: 'LoanEstimate_Edward.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' }
+      'Title': [
+        { name: 'Title Insurance', filename: 'TitlePolicy_CommitmentReport_20250629.pdf', uploaded: '6/29/2025 10:12:33 AM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Title Commitment', filename: 'TitleCommitment_FirstAmerican.pdf', uploaded: '6/29/2025 10:12:34 AM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'CPL', filename: 'CPL_CertifiedPlatMap_1456_Maple.pdf', uploaded: '6/29/2025 10:15:22 AM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Preliminary Title Report', filename: 'PreliminaryTitleReport_Chicago_Title.pdf', uploaded: '6/28/2025 3:44:18 PM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Title Search', filename: 'TitleSearch_PropertyHistory_40Years.pdf', uploaded: '6/28/2025 3:45:01 PM', status: getRandomStatus(), source: 'Interface' }
       ],
-      'PROP': [
-        { name: 'Purchase Agreement', filename: 'CONTRACT.pdf', uploaded: '6/30/2025 2:34:17 PM', status: getRandomStatus(), source: 'Manually Add', expires: '08/05/2025' }
+      'Income': [
+        { name: 'W-2', filename: 'W2_Johnson_Edward_2024.pdf', uploaded: '6/27/2025 10:15:44 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'W-2', filename: 'W2_Johnson_Edward_2023.pdf', uploaded: '6/27/2025 10:15:45 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'W-2', filename: 'W2_Johnson_Sarah_2024.pdf', uploaded: '6/27/2025 10:16:12 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'W-2', filename: 'W2_Johnson_Sarah_2023.pdf', uploaded: '6/27/2025 10:16:13 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Pay Stubs', filename: 'PayStub_Edward_20250615.pdf', uploaded: '6/27/2025 10:18:22 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Pay Stubs', filename: 'PayStub_Edward_20250531.pdf', uploaded: '6/27/2025 10:18:23 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Pay Stubs', filename: 'PayStub_Sarah_20250615.pdf', uploaded: '6/27/2025 10:19:05 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Pay Stubs', filename: 'PayStub_Sarah_20250531.pdf', uploaded: '6/27/2025 10:19:06 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Tax Returns', filename: 'TaxReturn_1040_2024_Joint.pdf', uploaded: '6/27/2025 10:22:34 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Tax Returns', filename: 'TaxReturn_1040_2023_Joint.pdf', uploaded: '6/27/2025 10:22:35 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Tax Transcripts', filename: 'IRS_Transcript_2024_Edward.pdf', uploaded: '6/28/2025 9:33:18 AM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Tax Transcripts', filename: 'IRS_Transcript_2023_Edward.pdf', uploaded: '6/28/2025 9:33:19 AM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Employment Verification', filename: 'VOE_TechCorp_Edward_Johnson.pdf', uploaded: '6/28/2025 2:14:55 PM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Employment Verification', filename: 'VOE_HealthSystem_Sarah_Johnson.pdf', uploaded: '6/28/2025 2:15:22 PM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Self-Employment Income', filename: 'SelfEmployment_ProfitLoss_2024.pdf', uploaded: '6/27/2025 11:05:18 AM', status: getRandomStatus(), source: 'Manually Add' }
       ],
-      'MISC': [
-        { name: 'E-Sign Audit Trail', filename: 'AuditLog_1.pdf', uploaded: '7/1/2025 5:08:39 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'E-Sign Audit Trail', filename: 'AuditLog_2.pdf', uploaded: '7/1/2025 5:08:51 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'E-Sign Audit Trail', filename: 'AuditLog_3.pdf', uploaded: '7/1/2025 5:08:52 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'E-Sign Audit Trail', filename: 'AuditLog_4.pdf', uploaded: '7/2/2025 3:09:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'E-Sign Audit Trail', filename: 'AuditLog_5.pdf', uploaded: '7/2/2025 3:12:08 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'Compliance Report', filename: 'ComplianceEase.pdf', uploaded: '7/2/2025 11:13:27 AM', status: getRandomStatus(), source: 'Interface' }
+      'Assets': [
+        { name: 'Bank Statements', filename: 'BankStatement_Chase_Checking_202505.pdf', uploaded: '6/27/2025 10:45:33 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Bank Statements', filename: 'BankStatement_Chase_Checking_202504.pdf', uploaded: '6/27/2025 10:45:34 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Bank Statements', filename: 'BankStatement_Chase_Savings_202505.pdf', uploaded: '6/27/2025 10:46:12 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Bank Statements', filename: 'BankStatement_Chase_Savings_202504.pdf', uploaded: '6/27/2025 10:46:13 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Investment Statements', filename: 'Investment_Fidelity_401k_202505.pdf', uploaded: '6/27/2025 10:50:28 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Investment Statements', filename: 'Investment_Vanguard_IRA_202505.pdf', uploaded: '6/27/2025 10:50:51 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Gift Letter', filename: 'GiftLetter_Parents_DownPayment_25K.pdf', uploaded: '6/27/2025 11:15:44 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Gift Funds Evidence', filename: 'GiftFunds_WireTransfer_Receipt.pdf', uploaded: '6/28/2025 10:22:18 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Asset Verification', filename: 'VOD_Chase_Bank_Verification.pdf', uploaded: '6/29/2025 11:18:33 AM', status: getRandomStatus(), source: 'Interface' }
       ],
-      'DOCS': [
-        { name: 'Fee Worksheet', filename: 'InitialCostWorksheet.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' }
+      'Insurance': [
+        { name: 'HOI Policy', filename: 'Homeowners_Insurance_StateFarm_Policy.pdf', uploaded: '6/29/2025 1:22:45 PM', status: getRandomStatus(), source: 'Manually Add', expires: '06/29/2026' },
+        { name: 'Insurance Declaration', filename: 'Insurance_DecPage_Coverage_Details.pdf', uploaded: '6/29/2025 1:22:46 PM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Flood Cert', filename: 'FloodCertification_FEMA_Zone_C.pdf', uploaded: '6/28/2025 3:33:22 PM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Flood Insurance', filename: 'FloodInsurance_Policy_NFIP.pdf', uploaded: '6/29/2025 1:25:18 PM', status: getRandomStatus(), source: 'Manually Add' }
       ],
-      'GOV': [
-        { name: 'FHA Via Addendum to Uniform Residential Loan Application', filename: 'HUD_Addendum.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'FHA Real Estate Certification', filename: 'FHA_AmendatoryClause_Real.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'FHA Notice to Homebuyers', filename: 'ImportantNotice_Homebuyers.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'FHA For Your Protection', filename: 'ForYourProtection_GetHo.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'FHA Identity Certification', filename: 'FHA_IdentityCertificate.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'FHA Informed Consumer Choice Disclosure', filename: 'InformedConsumerChoice.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: 'FHA Mortgage Assumption Notice', filename: 'NoticeHomeowner_Assum.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' }
+      'Closing': [
+        { name: 'Closing Disclosure', filename: 'ClosingDisclosure_Final_20250702.pdf', uploaded: '7/2/2025 9:15:44 AM', status: getRandomStatus(), source: 'Doc Prep' },
+        { name: 'Closing Disclosure - Initial', filename: 'ClosingDisclosure_Initial_20250630.pdf', uploaded: '6/30/2025 3:22:18 PM', status: getRandomStatus(), source: 'Doc Prep' },
+        { name: 'Promissory Note', filename: 'PromissoryNote_Signed_350000.pdf', uploaded: '7/5/2025 10:33:22 AM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Deed of Trust', filename: 'DeedOfTrust_SecurityInstrument.pdf', uploaded: '7/5/2025 10:33:23 AM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Right of Rescission', filename: 'RightOfRescission_3Day_Notice.pdf', uploaded: '7/5/2025 10:33:24 AM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Settlement Statement', filename: 'HUD1_SettlementStatement_Final.pdf', uploaded: '7/5/2025 11:15:33 AM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Closing Instructions', filename: 'ClosingInstructions_TitleCompany.pdf', uploaded: '7/2/2025 2:45:18 PM', status: getRandomStatus(), source: 'Interface' }
       ],
-      'APP': [
-        { name: 'Loan Application', filename: '1003_UniformResidentialLoan.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
-        { name: '1003 URLA', filename: '1003_Form.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' }
+      'Disclosures': [
+        { name: 'Loan Estimate', filename: 'LoanEstimate_Initial_20250627.pdf', uploaded: '6/27/2025 2:31:42 PM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Loan Estimate', filename: 'LoanEstimate_Revised_20250630.pdf', uploaded: '6/30/2025 4:15:22 PM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Initial Disclosures', filename: 'InitialDisclosures_Package.pdf', uploaded: '6/27/2025 2:19:26 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Privacy Notice', filename: 'PrivacyNotice_GLBA_Compliance.pdf', uploaded: '6/27/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Intent to Proceed', filename: 'IntentToProceed_Signed_20250627.pdf', uploaded: '6/27/2025 3:13:38 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'ECOA Disclosure', filename: 'ECOA_EqualCreditOpportunity_Notice.pdf', uploaded: '6/27/2025 3:13:39 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Mortgage Fraud Warning', filename: 'FBI_MortgageFraud_Warning.pdf', uploaded: '6/27/2025 3:13:40 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Patriot Act Disclosure', filename: 'PatriotAct_CustomerIdentification.pdf', uploaded: '6/27/2025 3:13:41 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Servicing Disclosure', filename: 'ServicingDisclosure_Transfer_Notice.pdf', uploaded: '6/27/2025 3:14:15 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Affiliated Business Disclosure', filename: 'AfBA_Disclosure_RelatedServices.pdf', uploaded: '6/27/2025 3:14:44 PM', status: getRandomStatus(), source: 'E-Sign Import' }
+      ],
+      'Loan': [
+        { name: 'Lock Rate Lock', filename: 'RateLock_Confirmation_6.5_Percent.pdf', uploaded: '6/29/2025 4:22:33 PM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Loan Approval', filename: 'UnderwritingApproval_Conditional.pdf', uploaded: '6/30/2025 11:45:22 AM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Clear to Close', filename: 'ClearToClose_Final_Approval.pdf', uploaded: '7/2/2025 9:33:44 AM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Loan Summary', filename: 'LoanSummary_Terms_Conditions.pdf', uploaded: '6/30/2025 2:15:33 PM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Amortization Schedule', filename: 'AmortizationSchedule_30Year_Fixed.pdf', uploaded: '6/30/2025 2:16:05 PM', status: getRandomStatus(), source: 'Interface' }
+      ],
+      'Verification': [
+        { name: 'USPS', filename: 'USPS_AddressValidation_1456_Maple.pdf', uploaded: '6/27/2025 2:34:50 PM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'SSN Verification', filename: 'SSN_Validation_Report_Borrowers.pdf', uploaded: '6/27/2025 11:55:18 PM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Identity Verification', filename: 'ID_Verification_DriversLicense_Edward.pdf', uploaded: '6/27/2025 9:44:22 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Identity Verification', filename: 'ID_Verification_DriversLicense_Sarah.pdf', uploaded: '6/27/2025 9:44:55 AM', status: getRandomStatus(), source: 'Manually Add' }
+      ],
+      'Government': [
+        { name: 'FHA Case Number', filename: 'FHA_CaseNumber_Assignment.pdf', uploaded: '6/28/2025 10:13:37 AM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'FHA Addendum to URLA', filename: 'FHA_URLA_Addendum_92900A.pdf', uploaded: '7/2/2025 3:13:37 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'FHA Real Estate Certification', filename: 'FHA_AmendatoryClause_RealEstate.pdf', uploaded: '7/2/2025 3:13:38 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'FHA Notice to Homebuyers', filename: 'FHA_Notice_ImportantNotice_Homebuyers.pdf', uploaded: '7/2/2025 3:13:39 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'FHA For Your Protection', filename: 'FHA_ForYourProtection_Settlement.pdf', uploaded: '7/2/2025 3:13:40 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'FHA Identity Certification', filename: 'FHA_IdentityCertificate_SSN.pdf', uploaded: '7/2/2025 3:13:41 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'VA Certificate of Eligibility', filename: 'VA_COE_Certificate_26_1880.pdf', uploaded: '6/29/2025 9:22:15 AM', status: getRandomStatus(), source: 'Interface' }
+      ],
+      'Compliance': [
+        { name: 'SGFE Compliance Certificate', filename: 'ComplianceEase_Certificate_ID_06302025.pdf', uploaded: '6/30/2025 2:23:18 PM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'AUS Findings', filename: 'DU_Findings_Approve_Eligible.pdf', uploaded: '6/28/2025 11:44:33 AM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Quality Control Review', filename: 'QC_Review_PreFunding_ChecklistComplete.pdf', uploaded: '7/2/2025 11:13:27 AM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'HMDA LAR', filename: 'HMDA_LoanApplicationRegister_2025.pdf', uploaded: '6/27/2025 3:44:55 PM', status: getRandomStatus(), source: 'Interface' },
+        { name: 'Anti-Steering Disclosure', filename: 'AntiSteering_LoanOptions_Disclosure.pdf', uploaded: '6/27/2025 3:15:22 PM', status: getRandomStatus(), source: 'E-Sign Import' }
+      ],
+      'Miscellaneous': [
+        { name: 'E-Sign Audit Trail', filename: 'AuditTrail_InitialDisclosures_20250627.pdf', uploaded: '6/27/2025 5:08:39 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'E-Sign Audit Trail', filename: 'AuditTrail_Closing_Package_20250705.pdf', uploaded: '7/5/2025 10:35:18 PM', status: getRandomStatus(), source: 'E-Sign Import' },
+        { name: 'Processor Notes', filename: 'ProcessorNotes_LoanFile_Summary.pdf', uploaded: '6/30/2025 4:22:33 PM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Underwriter Conditions', filename: 'UW_Conditions_List_Outstanding.pdf', uploaded: '6/30/2025 11:46:15 AM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Wire Instructions', filename: 'WireInstructions_DownPayment_Closing.pdf', uploaded: '7/3/2025 9:15:44 AM', status: getRandomStatus(), source: 'Manually Add' }
+      ],
+      'Post Closing': [
+        { name: 'Final Title Policy', filename: 'FinalTitlePolicy_Owners_Lenders.pdf', uploaded: '10/9/2025 12:14:20 PM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Recorded Security Instrument', filename: 'RecordedDeed_CountyRecorder_Stamped.pdf', uploaded: '10/9/2025 12:14:21 PM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Recorded Deed', filename: 'RecordedWarrantyDeed_20251009.pdf', uploaded: '10/9/2025 12:15:05 PM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Servicing Transfer Notice', filename: 'ServicingTransfer_Goodbye_Letter.pdf', uploaded: '9/11/2025 2:30:55 PM', status: getRandomStatus(), source: 'Manually Add' },
+        { name: 'Final HUD Settlement', filename: 'FinalHUD_PostClosing_Reconciliation.pdf', uploaded: '7/10/2025 3:22:18 PM', status: getRandomStatus(), source: 'Interface' }
       ]
     };
   };
 
-  // Handle document click - show storage modal for Missing, direct viewer for Found/Inactive
+  // Handle document click - show storage modal for Missing or Found with multiple docs, direct viewer for single Found/Inactive
   const handleDocumentClick = (e, doc) => {
     e.preventDefault();
 
     // Set the active document to show indicator icon
     setActiveDocument(doc.documentType);
 
-    if (doc.status === 'Missing') {
+    // If Missing OR Found/Inactive with multiple documents (foundCount > 1), show doc storage modal
+    if (doc.status === 'Missing' ||
+        (doc.status === 'Found' && doc.foundCount > 1) ||
+        (doc.status === 'Pending Review - Inactive' && doc.foundCount > 1)) {
       setSelectedDocType(doc.documentType);
       setShowDocStorageModal(true);
       // Reset filters when opening modal
@@ -474,8 +565,9 @@ const BoBSingleFlow = () => {
         expanded[cat] = true;
       });
       setExpandedCategories(expanded);
-    } else if (doc.status === 'Found' || doc.status === 'Pending Review - Inactive') {
-      // For Found/Inactive docs, show direct document viewer with metadata
+    } else if ((doc.status === 'Found' && doc.foundCount === 1) ||
+               (doc.status === 'Pending Review - Inactive' && doc.foundCount === 1)) {
+      // For single Found (foundCount === 1) or single Inactive doc (foundCount === 1), show direct document viewer with metadata
       // In production, this would make an API call to fetch document details from EPS
       const docDetails = {
         documentType: doc.documentType,
@@ -836,6 +928,12 @@ const BoBSingleFlow = () => {
             {loanValidated && bundleName && (
               <div className="max-w-3xl flex justify-end space-x-4 mt-6">
                 <button
+                  onClick={handleStartNew}
+                  className="px-4 py-2 bg-teal-100 text-teal-700 rounded hover:bg-teal-200 font-medium text-xs"
+                >
+                  Start New Bundle
+                </button>
+                <button
                   onClick={handleLoadStackingOrder}
                   disabled={isLoadingDocuments || fieldsLocked}
                   className="px-4 py-2 bg-teal-700 text-white rounded hover:bg-teal-800 font-medium disabled:bg-gray-400 disabled:cursor-not-allowed text-xs"
@@ -848,12 +946,6 @@ const BoBSingleFlow = () => {
                   ) : (
                     'Build Bundle'
                   )}
-                </button>
-                <button
-                  onClick={handleStartNew}
-                  className="px-4 py-2 bg-teal-100 text-teal-700 rounded hover:bg-teal-200 font-medium text-xs"
-                >
-                  Start New Bundle
                 </button>
               </div>
             )}
@@ -1047,7 +1139,9 @@ const BoBSingleFlow = () => {
                               ? 'bg-red-100 text-red-800'
                               : 'bg-yellow-100 text-yellow-800'
                           }`}>
-                            {doc.status}
+                            {doc.status === 'Found' || doc.status === 'Pending Review - Inactive'
+                              ? `${doc.status} - ${doc.foundCount}`
+                              : doc.status}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-gray-700 text-xs">{doc.category}</td>
@@ -1544,20 +1638,15 @@ const BoBSingleFlow = () => {
                       </button>
                     </div>
 
-                    {/* Preview Area */}
-                    <div className="flex-1 p-4 flex items-center justify-center">
-                      <div className="bg-white shadow-lg rounded p-6 max-w-sm text-center">
-                        <File size={48} className="text-gray-400 mx-auto mb-3" />
-                        <p className="text-gray-700 text-xs font-medium mb-1">
-                          {previewDocument.name}
-                        </p>
-                        <p className="text-gray-500 text-xs mb-3">
-                          {previewDocument.filename}
-                        </p>
-                        <div className="p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
-                          <p className="font-semibold mb-1">📄 Document Preview</p>
-                          <p className="text-xs">Click "Open Full View" to see complete document with metadata panel.</p>
-                          <p className="text-xs mt-2">Double-click table row for quick access.</p>
+                    {/* Preview Area - Realistic Document Templates */}
+                    <div className="flex-1 overflow-auto bg-gray-100">
+                      <div className="p-4">
+                        <div className="bg-white shadow-lg max-w-4xl mx-auto">
+                          <DocumentTemplateSelector
+                            documentType={previewDocument.name}
+                            documentName={previewDocument.filename}
+                            category={previewDocument.category}
+                          />
                         </div>
                       </div>
                     </div>
@@ -1917,25 +2006,13 @@ const BoBSingleFlow = () => {
                 {/* PDF Preview Area */}
                 <div className="flex-1 overflow-auto bg-gray-100">
                   <div className="p-6">
-                    <div className="bg-white shadow-lg max-w-4xl mx-auto min-h-[900px] p-8">
-                      {/* Simulated PDF Content */}
-                      <div className="flex flex-col items-center justify-center h-full">
-                        <File size={64} className="text-gray-400 mb-4" />
-                        <p className="text-gray-700 text-base font-semibold mb-2">
-                          {viewingDocument.filename || viewingDocument.name || 'Document Preview'}
-                        </p>
-                        <p className="text-gray-500 text-xs mb-6">PDF Document</p>
-                        <div className="space-y-2 text-xs text-gray-600 text-center max-w-md">
-                          <p><strong>Document Type:</strong> {viewingDocument.documentType || 'Document'}</p>
-                          <p><strong>Category:</strong> {viewingDocument.category || 'General'}</p>
-                          <p><strong>Status:</strong> {viewingDocument.status || 'Found'}</p>
-                          <p><strong>Format:</strong> {viewingDocument.format || 'PDF'}</p>
-                        </div>
-                        <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800 max-w-lg">
-                          <p className="font-semibold mb-2">📄 EPS Document Viewer</p>
-                          <p>In production, this would display the actual PDF document fetched from BytePro dbo via EPS API call. The document would be rendered using a PDF viewer library like PDF.js with full zoom, pan, and annotation capabilities.</p>
-                        </div>
-                      </div>
+                    <div className="bg-white shadow-lg max-w-4xl mx-auto">
+                      {/* Realistic Document Templates */}
+                      <DocumentTemplateSelector
+                        documentType={viewingDocument.documentType}
+                        documentName={viewingDocument.filename || viewingDocument.name}
+                        category={viewingDocument.category}
+                      />
                     </div>
                   </div>
                 </div>
@@ -1989,6 +2066,41 @@ const BoBSingleFlow = () => {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bundle Preview Modal - Clean PDF output stream */}
+      {showBundlePreview && (
+        <div className="fixed inset-0 bg-white z-[70]">
+          {/* Close Button - Floating */}
+          <button
+            onClick={() => setShowBundlePreview(false)}
+            className="fixed top-4 right-4 z-[80] p-3 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 shadow-lg"
+            title="Close Preview"
+          >
+            <X size={24} />
+          </button>
+
+          {/* Scrollable PDF Stream */}
+          <div className="w-full h-full overflow-auto">
+            <div className="max-w-[8.5in] mx-auto py-6">
+              {stackingOrder
+                .filter(doc => doc.status !== 'Missing')
+                .map((doc, index, filteredDocs) => (
+                  <div key={index}>
+                    <DocumentTemplateSelector
+                      documentType={doc.documentType}
+                      documentName={doc.documentType}
+                      category={doc.category}
+                    />
+                    {/* Simple page break between documents */}
+                    {index < filteredDocs.length - 1 && (
+                      <div className="h-6"></div>
+                    )}
+                  </div>
+                ))}
             </div>
           </div>
         </div>
