@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { User, LogOut, Settings, Grid, ChevronDown, FileText, Package, Stethoscope } from 'lucide-react';
+import { User, LogOut, Settings, Grid, ChevronDown, FileText, Package, Stethoscope, Menu } from 'lucide-react';
 
-export default function BoBHeader({ currentApp = 'bulk' }) {
+export default function BoBHeader({ currentApp = 'bulk', onMenuToggle }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAppsMenu, setShowAppsMenu] = useState(false);
 
@@ -49,8 +49,19 @@ export default function BoBHeader({ currentApp = 'bulk' }) {
     <header className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Left: Logo & App Switcher */}
+          {/* Left: Hamburger Menu, Logo & App Switcher */}
           <div className="flex items-center gap-4">
+            {/* Hamburger Menu Button */}
+            {onMenuToggle && (
+              <button
+                onClick={onMenuToggle}
+                className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition"
+                aria-label="Toggle navigation menu"
+              >
+                <Menu size={24} />
+              </button>
+            )}
+
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
                 <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">

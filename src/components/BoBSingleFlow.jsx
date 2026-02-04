@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Download, CheckCircle, XCircle, Loader2, Upload, File, X, Search, ChevronDown, ChevronRight, Lock, Eye, Filter, AlertTriangle } from 'lucide-react';
+import { RefreshCw, Download, CheckCircle, XCircle, Loader2, Upload, File, X, Search, ChevronDown, ChevronRight, Lock, Eye, Filter, AlertTriangle, Menu } from 'lucide-react';
 import { getLoanDocumentStatus } from '../services/epsDocumentApi';
 import DocumentTemplateSelector from './documentTemplates/DocumentTemplateSelector';
+import NavigationPanel from './NavigationPanel';
+import ShipperPage from './ShipperPage';
+import ExampleScreenA from './ExampleScreenA';
+import ExampleScreenB from './ExampleScreenB';
+import ExampleScreenC from './ExampleScreenC';
 
 const BoBSingleFlow = () => {
   const [subjectLoan, setSubjectLoan] = useState('');
@@ -42,6 +47,10 @@ const BoBSingleFlow = () => {
   const [editedDocProperties, setEditedDocProperties] = useState(null); // Track edited document properties
   const [showSaveSuccess, setShowSaveSuccess] = useState(false); // Show success message after save
   const [showBundlePreview, setShowBundlePreview] = useState(false); // Show bundled PDF preview
+
+  // Navigation Panel State (Phase 4 Initiative)
+  const [isNavPanelOpen, setIsNavPanelOpen] = useState(false); // Toggle navigation panel
+  const [currentPage, setCurrentPage] = useState('single-flow'); // Current active page view
 
   // Read loan number and bundle name from URL parameters on component mount
   useEffect(() => {
@@ -741,9 +750,26 @@ const BoBSingleFlow = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Navigation Panel */}
+      <NavigationPanel
+        isOpen={isNavPanelOpen}
+        onClose={() => setIsNavPanelOpen(false)}
+        onNavigate={(pageId) => setCurrentPage(pageId)}
+        currentPage={currentPage}
+      />
+
       {/* Header */}
       <div className="bg-white border-b px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center">
+        <div className="flex items-center gap-3">
+          {/* Hamburger Menu Button */}
+          <button
+            onClick={() => setIsNavPanelOpen(!isNavPanelOpen)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition"
+            aria-label="Toggle navigation menu"
+          >
+            <Menu size={24} className="text-gray-700" />
+          </button>
+
           <svg width="85" height="40" viewBox="0 0 85 40" fill="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="clearGradient" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -757,6 +783,29 @@ const BoBSingleFlow = () => {
           </svg>
           <span className="text-black text-2xl font-bold ml-2">- BoB Manager</span>
         </div>
+
+        {/* CMG Financial Logo - Center */}
+        <div className="absolute left-1/2 transform -translate-x-1/2">
+          <div className="bg-white rounded-lg px-4 py-1.5 shadow-sm">
+            <div className="flex items-baseline gap-1">
+              <span style={{
+                fontSize: '32px',
+                fontWeight: '700',
+                color: '#9ACD32',
+                fontFamily: 'Arial, sans-serif',
+                letterSpacing: '-1px'
+              }}>CMG</span>
+              <span style={{
+                fontSize: '16px',
+                fontWeight: '400',
+                color: '#5A5A5A',
+                fontFamily: 'Arial, sans-serif',
+                letterSpacing: '3px'
+              }}>FINANCIAL</span>
+            </div>
+          </div>
+        </div>
+
         <div className="relative">
           <button
             onClick={() => setShowUserDropdown(!showUserDropdown)}
@@ -819,6 +868,15 @@ const BoBSingleFlow = () => {
         </div>
       </div>
 
+      {/* Conditional Page Rendering */}
+      {currentPage === 'shipper' && <ShipperPage onMenuToggle={() => setIsNavPanelOpen(!isNavPanelOpen)} />}
+      {currentPage === 'example-a' && <ExampleScreenA onMenuToggle={() => setIsNavPanelOpen(!isNavPanelOpen)} />}
+      {currentPage === 'example-b' && <ExampleScreenB onMenuToggle={() => setIsNavPanelOpen(!isNavPanelOpen)} />}
+      {currentPage === 'example-c' && <ExampleScreenC onMenuToggle={() => setIsNavPanelOpen(!isNavPanelOpen)} />}
+
+      {/* Original Single Flow Content */}
+      {currentPage === 'single-flow' && (
+      <>
       <div className="max-w-7xl mx-auto p-6">
         <h1 className="text-xl font-bold text-gray-800 mb-6">
           BoB (Builder of Bundles) | Single Loan Delivery
@@ -2105,6 +2163,8 @@ const BoBSingleFlow = () => {
           </div>
         </div>
       )}
+      </>
+    )}
     </div>
   );
 };

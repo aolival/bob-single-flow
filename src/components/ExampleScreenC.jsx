@@ -1,0 +1,73 @@
+import React from 'react';
+import { Settings, Save, X, RefreshCw, Menu } from 'lucide-react';
+
+const ExampleScreenC = ({ onMenuToggle }) => {
+  return (
+    <div className="h-screen flex flex-col bg-gray-100">
+      {/* Fixed Action Toolbar */}
+      <div className="flex-shrink-0 bg-white border-b border-gray-200 shadow-sm relative">
+        <div className="max-w-7xl mx-auto px-6 py-2.5">
+          <div className="flex items-center justify-end gap-2">
+            <button
+              onClick={() => window.location.reload()}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition font-medium text-xs"
+              title="Refresh"
+            >
+              <RefreshCw size={14} />
+              Refresh
+            </button>
+            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition font-medium text-xs">
+              <X size={14} />
+              Cancel
+            </button>
+            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500 text-white rounded hover:bg-teal-600 transition font-medium text-xs">
+              <Save size={14} />
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto p-6">
+        {/* Page Header */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex items-center gap-3">
+            <Settings className="text-teal-600" size={24} />
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">Example Screen C</h1>
+              <p className="text-gray-600 text-xs mt-1">
+                This is a placeholder screen for future functionality
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="bg-white rounded-lg shadow-sm p-8">
+          <div className="text-center py-16">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-100 rounded-full mb-4">
+              <Settings className="text-teal-600" size={24} />
+            </div>
+            <h2 className="text-sm font-semibold text-gray-900 mb-2">
+              Example Screen C
+            </h2>
+            <p className="text-gray-600 max-w-md mx-auto text-xs">
+              This screen is currently a placeholder. Additional functionality and
+              features will be added here as part of the Phase 4 initiative to
+              fully decouple CMG users from Byte.
+            </p>
+            <div className="mt-8 inline-flex items-center gap-2 px-4 py-2 bg-teal-50 text-teal-700 rounded-lg text-xs font-medium">
+              <span className="inline-block w-2 h-2 bg-teal-500 rounded-full animate-pulse"></span>
+              Under Development
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  );
+};
+
+export default ExampleScreenC;
