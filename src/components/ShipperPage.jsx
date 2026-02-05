@@ -2,20 +2,9 @@ import React, { useState } from 'react';
 import { Calendar, Package, FileText, AlertCircle, Save, X, RefreshCw, ChevronDown, ChevronUp, Menu } from 'lucide-react';
 
 const ShipperPage = ({ onMenuToggle }) => {
-  const [expandedSections, setExpandedSections] = useState({
-    shippingDetails: true,
-    ethicsReadiness: false,
-    postClosingDetails: false
-  });
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
 
-  const toggleSection = (section) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
-
-  const [formData, setFormData] = useState({
+  const initialFormData = {
     // Shipping Details
     shipper: '',
     shippingReceivedDate: '',
@@ -77,18 +66,134 @@ const ShipperPage = ({ onMenuToggle }) => {
     dotInstrumentNumber: '',
     tpInstrumentNumber: '',
     mklsc: ''
-  });
+  };
+
+  const initialExpandedSections = {
+    shippingDetails: true,
+    ethicsReadiness: false,
+    postClosingDetails: false
+  };
+
+  const [expandedSections, setExpandedSections] = useState(initialExpandedSections);
+  const [formData, setFormData] = useState(initialFormData);
+
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleRefresh = () => {
+    setFormData(initialFormData);
+    setExpandedSections(initialExpandedSections);
   };
 
   return (
     <div className="fixed inset-0 flex flex-col bg-gray-100 z-20">
       {/* Fixed Header */}
       <div className="flex-shrink-0 bg-gray-100 border-b border-gray-200 relative">
+        {/* CMG Financial Logo - Center */}
+        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+          <div className="bg-white rounded-lg px-4 py-1.5 shadow-sm">
+            <div className="flex items-baseline gap-1">
+              <span style={{
+                fontSize: '32px',
+                fontWeight: '700',
+                color: '#9ACD32',
+                fontFamily: 'Arial, sans-serif',
+                letterSpacing: '-1px'
+              }}>CMG</span>
+              <span style={{
+                fontSize: '16px',
+                fontWeight: '400',
+                color: '#5A5A5A',
+                fontFamily: 'Arial, sans-serif',
+                letterSpacing: '3px'
+              }}>FINANCIAL</span>
+            </div>
+          </div>
+        </div>
+
+        {/* User Dropdown - Upper Right */}
+        <div className="absolute right-6 top-1/2 transform -translate-y-1/2 z-10">
+          <div className="relative">
+            <button
+              onClick={() => setShowUserDropdown(!showUserDropdown)}
+              className="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center text-white font-semibold shadow-sm hover:bg-teal-600 transition-colors cursor-pointer"
+            >
+              AO
+            </button>
+            {showUserDropdown && (
+              <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      alert('My Account clicked');
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                  >
+                    My Account
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      alert('Sign Out clicked');
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                  >
+                    Sign Out
+                  </button>
+                  <div className="border-t border-gray-200 my-1"></div>
+                  <button
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      window.location.href = 'http://localhost:5174';
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                  >
+                    Switch to Single Flow BoB
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      window.location.href = 'http://localhost:5173';
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                  >
+                    Switch to BoB - Bulk Delivery
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      window.location.href = 'http://localhost:5175';
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                  >
+                    Switch to Doctor BoB - Single Loan
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      window.location.href = 'http://localhost:5180';
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                  >
+                    Switch to Doctor BoB - Bulk Delivery
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="max-w-7xl mx-auto px-6">
-          <div className="pt-6 pb-4 flex items-center gap-4">
+          <div className="pt-3 pb-2 flex items-center gap-4">
             {/* Hamburger Menu Button */}
             {onMenuToggle && (
               <button
@@ -100,8 +205,8 @@ const ShipperPage = ({ onMenuToggle }) => {
               </button>
             )}
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Shipper Management</h1>
-              <p className="text-gray-600 text-xs mt-1">Manage shipping and post-close efforts</p>
+              <h1 className="text-xl font-bold text-gray-900">Shipper Management</h1>
+              <p className="text-gray-600 text-xs mt-0.5">Manage shipping and post-close efforts</p>
             </div>
           </div>
         </div>
@@ -112,7 +217,7 @@ const ShipperPage = ({ onMenuToggle }) => {
         <div className="max-w-7xl mx-auto px-6 py-2.5">
           <div className="flex items-center justify-end gap-2">
             <button
-              onClick={() => window.location.reload()}
+              onClick={handleRefresh}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition font-medium text-xs"
               title="Refresh"
             >
@@ -133,13 +238,13 @@ const ShipperPage = ({ onMenuToggle }) => {
 
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="max-w-7xl mx-auto px-6 py-3">
 
         {/* SHIPPING DETAILS Section */}
-        <div className="bg-white rounded-lg shadow-sm mb-6">
+        <div className="bg-white rounded-lg shadow-sm mb-2">
           <button
             onClick={() => toggleSection('shippingDetails')}
-            className="w-full border-l-4 border-teal-500 bg-gray-50 px-6 py-4 hover:bg-gray-100 transition-colors"
+            className="w-full border-l-4 border-teal-500 bg-gray-50 px-6 py-2 hover:bg-gray-100 transition-colors"
           >
             <h2 className="text-xs font-semibold text-gray-900 flex items-center justify-between">
               <span className="flex items-center gap-2">
@@ -372,10 +477,10 @@ const ShipperPage = ({ onMenuToggle }) => {
         </div>
 
         {/* Ethics/Readiness Section */}
-        <div className="bg-white rounded-lg shadow-sm mb-6">
+        <div className="bg-white rounded-lg shadow-sm mb-2">
           <button
             onClick={() => toggleSection('ethicsReadiness')}
-            className="w-full border-l-4 border-teal-500 bg-gray-50 px-6 py-4 hover:bg-gray-100 transition-colors"
+            className="w-full border-l-4 border-teal-500 bg-gray-50 px-6 py-2 hover:bg-gray-100 transition-colors"
           >
             <h2 className="text-xs font-semibold text-gray-900 flex items-center justify-between">
               <span className="flex items-center gap-2">
@@ -457,10 +562,10 @@ const ShipperPage = ({ onMenuToggle }) => {
         </div>
 
         {/* POST CLOSING DETAILS Section */}
-        <div className="bg-white rounded-lg shadow-sm mb-6">
+        <div className="bg-white rounded-lg shadow-sm mb-2">
           <button
             onClick={() => toggleSection('postClosingDetails')}
-            className="w-full border-l-4 border-teal-500 bg-gray-50 px-6 py-4 hover:bg-gray-100 transition-colors"
+            className="w-full border-l-4 border-teal-500 bg-gray-50 px-6 py-2 hover:bg-gray-100 transition-colors"
           >
             <h2 className="text-xs font-semibold text-gray-900 flex items-center justify-between">
               <span className="flex items-center gap-2">

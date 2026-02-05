@@ -1,17 +1,28 @@
 import React from 'react';
-import { X, Home } from 'lucide-react';
+import { X, Home, Package, FileText, Stethoscope, Activity } from 'lucide-react';
 
 const NavigationPanel = ({ isOpen, onClose, onNavigate, currentPage }) => {
   const menuItems = [
-    { id: 'shipper', label: 'Shipper', icon: Home },
-    { id: 'example-a', label: 'Example Screen A', icon: null },
-    { id: 'example-b', label: 'Example Screen B', icon: null },
-    { id: 'example-c', label: 'Example Screen C', icon: null },
+    { id: 'shipper', label: 'Shipper', icon: Home, type: 'internal' },
+    { id: 'example-a', label: 'Example Screen A', icon: null, type: 'internal' },
+    { id: 'example-b', label: 'Example Screen B', icon: null, type: 'internal' },
+    { id: 'example-c', label: 'Example Screen C', icon: null, type: 'internal' },
   ];
 
-  const handleMenuClick = (itemId) => {
-    onNavigate(itemId);
-    onClose(); // Auto-close the navigation panel after selection
+  const bobSuiteItems = [
+    { id: 'single-flow', label: 'Single Flow BoB', icon: FileText, url: 'http://localhost:5174', type: 'external' },
+    { id: 'bulk-bundle', label: 'Bulk Bundle Manager', icon: Package, url: 'http://localhost:5173', type: 'external' },
+    { id: 'doctor-bob', label: 'Doctor BoB', icon: Stethoscope, url: 'http://localhost:5175', type: 'external' },
+    { id: 'doctor-bob-bulk', label: 'Doctor BoB - Bulk', icon: Activity, url: 'http://localhost:5180', type: 'external' },
+  ];
+
+  const handleMenuClick = (item) => {
+    if (item.type === 'external') {
+      window.location.href = item.url;
+    } else {
+      onNavigate(item.id);
+      onClose(); // Auto-close the navigation panel after selection
+    }
   };
 
   return (
@@ -51,12 +62,31 @@ const NavigationPanel = ({ isOpen, onClose, onNavigate, currentPage }) => {
             return (
               <button
                 key={item.id}
-                onClick={() => handleMenuClick(item.id)}
+                onClick={() => handleMenuClick(item)}
                 className={`w-full text-left px-4 py-3 flex items-center gap-3 transition ${
                   isActive
                     ? 'bg-teal-700/50 text-white border-l-4 border-white'
                     : 'text-teal-50 hover:bg-teal-600/40'
                 }`}
+              >
+                {Icon && <Icon size={18} />}
+                <span className="font-medium">{item.label}</span>
+              </button>
+            );
+          })}
+
+          {/* BoB Suite Section */}
+          <div className="mt-4 px-4 py-2 border-t border-teal-500/30">
+            <p className="text-teal-200 text-xs font-semibold uppercase tracking-wider mb-2">BoB Suite</p>
+          </div>
+          {bobSuiteItems.map((item) => {
+            const Icon = item.icon;
+
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleMenuClick(item)}
+                className="w-full text-left px-4 py-3 flex items-center gap-3 transition text-teal-50 hover:bg-teal-600/40"
               >
                 {Icon && <Icon size={18} />}
                 <span className="font-medium">{item.label}</span>

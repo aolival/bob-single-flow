@@ -1,13 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Layers, Save, X, RefreshCw, Menu } from 'lucide-react';
 
 const ExampleScreenA = ({ onMenuToggle }) => {
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       {/* Fixed Action Toolbar */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200 shadow-sm relative">
         <div className="max-w-7xl mx-auto px-6 py-2.5">
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-between">
+          <div></div>
+          <div className="flex items-center gap-2">
             <button
               onClick={() => window.location.reload()}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition font-medium text-xs"
@@ -24,8 +28,80 @@ const ExampleScreenA = ({ onMenuToggle }) => {
               <Save size={14} />
               Save Changes
             </button>
+            {/* User Dropdown */}
+            <div className="relative ml-2">
+              <button
+                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                className="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center text-white font-semibold shadow-sm hover:bg-teal-600 transition-colors cursor-pointer"
+                title="User Menu"
+              >
+                AO
+              </button>
+              {showUserDropdown && (
+                <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
+                  <button
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      alert('My Account clicked');
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-t-lg"
+                  >
+                    My Account
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      alert('Sign Out clicked');
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-t border-gray-200"
+                  >
+                    Sign Out
+                  </button>
+                  <div className="border-t border-gray-200 pt-2 pb-1">
+                    <p className="px-4 py-1 text-xs text-gray-500 font-semibold uppercase">Switch App</p>
+                    <button
+                      onClick={() => {
+                        setShowUserDropdown(false);
+                        window.location.href = 'http://localhost:5174';
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Single Flow BoB
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowUserDropdown(false);
+                        window.location.href = 'http://localhost:5173';
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Bulk Bundle Manager
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowUserDropdown(false);
+                        window.location.href = 'http://localhost:5175';
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Doctor BoB
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowUserDropdown(false);
+                        window.location.href = 'http://localhost:5180';
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-b-lg"
+                    >
+                      Doctor BoB - Bulk
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
+      </div>
       </div>
 
       {/* Scrollable Content Area */}
