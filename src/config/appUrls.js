@@ -14,7 +14,7 @@ const APP_URLS = {
     'doctor-bob-bulk': 'http://localhost:5180',
   },
   production: {
-    'bulk-bundle': 'https://bob-bulk-bundler.vercel.app',
+    'bulk-bundle': 'https://bob-bundle-manager.vercel.app',
     'single-flow': 'https://bob-single-flow.vercel.app',
     'doctor-bob': 'https://bob-doctor.vercel.app',
     'doctor-bob-bulk': 'https://bob-doctor-bulk.vercel.app',
