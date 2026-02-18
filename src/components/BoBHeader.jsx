@@ -19,28 +19,28 @@ export default function BoBHeader({ currentApp = 'bulk', onMenuToggle }) {
       id: 'bulk',
       name: 'Bulk Bundle Manager',
       icon: Package,
-      url: getAppUrl('bulk-bundle'),
+      appId: 'bulk-bundle',
       description: 'Process multiple loan bundles'
     },
     {
       id: 'single',
       name: 'Single Flow Builder',
       icon: FileText,
-      url: getAppUrl('single-flow'),
+      appId: 'single-flow',
       description: 'Build individual bundles'
     },
     {
       id: 'doctor',
       name: 'Doctor BoB',
       icon: Stethoscope,
-      url: getAppUrl('doctor-bob'),
+      appId: 'doctor-bob',
       description: 'Quality control & validation'
     },
     {
       id: 'doctor-bulk',
       name: 'Doctor BoB - Bulk',
       icon: Activity,
-      url: getAppUrl('doctor-bob-bulk'),
+      appId: 'doctor-bob-bulk',
       description: 'Bulk QC & validation processing'
     }
   ];
@@ -54,7 +54,7 @@ export default function BoBHeader({ currentApp = 'bulk', onMenuToggle }) {
   };
 
   return (
-    <header className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg">
+    <header className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Left: Hamburger Menu, Logo & App Switcher */}
@@ -106,7 +106,7 @@ export default function BoBHeader({ currentApp = 'bulk', onMenuToggle }) {
                       return (
                         <a
                           key={app.id}
-                          href={app.url}
+                          href={getAppUrl(app.appId)}
                           className={`flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition ${
                             isActive ? 'bg-indigo-50 border-l-4 border-indigo-600' : ''
                           }`}

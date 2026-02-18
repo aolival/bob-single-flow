@@ -11,15 +11,15 @@ const NavigationPanel = ({ isOpen, onClose, onNavigate, currentPage }) => {
   ];
 
   const bobSuiteItems = [
-    { id: 'single-flow', label: 'Single Flow BoB', icon: FileText, url: getAppUrl('single-flow'), type: 'external' },
-    { id: 'bulk-bundle', label: 'Bulk Bundle Manager', icon: Package, url: getAppUrl('bulk-bundle'), type: 'external' },
-    { id: 'doctor-bob', label: 'Doctor BoB', icon: Stethoscope, url: getAppUrl('doctor-bob'), type: 'external' },
-    { id: 'doctor-bob-bulk', label: 'Doctor BoB - Bulk', icon: Activity, url: getAppUrl('doctor-bob-bulk'), type: 'external' },
+    { id: 'single-flow', label: 'Single Flow BoB', icon: FileText, appId: 'single-flow', type: 'external' },
+    { id: 'bulk-bundle', label: 'Bulk Bundle Manager', icon: Package, appId: 'bulk-bundle', type: 'external' },
+    { id: 'doctor-bob', label: 'Doctor BoB', icon: Stethoscope, appId: 'doctor-bob', type: 'external' },
+    { id: 'doctor-bob-bulk', label: 'Doctor BoB - Bulk', icon: Activity, appId: 'doctor-bob-bulk', type: 'external' },
   ];
 
   const handleMenuClick = (item) => {
     if (item.type === 'external') {
-      window.location.href = item.url;
+      window.location.href = getAppUrl(item.appId);
     } else {
       onNavigate(item.id);
       onClose(); // Auto-close the navigation panel after selection
