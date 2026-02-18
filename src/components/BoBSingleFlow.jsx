@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, Download, CheckCircle, XCircle, Loader2, Upload, File, X, Search, ChevronDown, ChevronRight, Lock, Eye, Filter, AlertTriangle, Menu } from 'lucide-react';
 import { getLoanDocumentStatus } from '../services/epsDocumentApi';
+import { getAppUrl } from '../config/appUrls';
 import DocumentTemplateSelector from './documentTemplates/DocumentTemplateSelector';
 import NavigationPanel from './NavigationPanel';
 import ShipperPage from './ShipperPage';
@@ -838,7 +839,7 @@ const BoBSingleFlow = () => {
                 <button
                   onClick={() => {
                     setShowUserDropdown(false);
-                    window.location.href = 'http://localhost:5173';
+                    window.location.href = getAppUrl('bulk-bundle');
                   }}
                   className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
                 >
@@ -847,7 +848,7 @@ const BoBSingleFlow = () => {
                 <button
                   onClick={() => {
                     setShowUserDropdown(false);
-                    window.location.href = 'http://localhost:5175';
+                    window.location.href = getAppUrl('doctor-bob');
                   }}
                   className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
                 >
@@ -856,7 +857,7 @@ const BoBSingleFlow = () => {
                 <button
                   onClick={() => {
                     setShowUserDropdown(false);
-                    window.location.href = 'http://localhost:5180';
+                    window.location.href = getAppUrl('doctor-bob-bulk');
                   }}
                   className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
                 >

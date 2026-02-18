@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Home, Package, FileText, Stethoscope, Activity } from 'lucide-react';
+import { getAppUrl } from '../config/appUrls';
 
 const NavigationPanel = ({ isOpen, onClose, onNavigate, currentPage }) => {
   const menuItems = [
@@ -10,10 +11,10 @@ const NavigationPanel = ({ isOpen, onClose, onNavigate, currentPage }) => {
   ];
 
   const bobSuiteItems = [
-    { id: 'single-flow', label: 'Single Flow BoB', icon: FileText, url: 'http://localhost:5174', type: 'external' },
-    { id: 'bulk-bundle', label: 'Bulk Bundle Manager', icon: Package, url: 'http://localhost:5173', type: 'external' },
-    { id: 'doctor-bob', label: 'Doctor BoB', icon: Stethoscope, url: 'http://localhost:5175', type: 'external' },
-    { id: 'doctor-bob-bulk', label: 'Doctor BoB - Bulk', icon: Activity, url: 'http://localhost:5180', type: 'external' },
+    { id: 'single-flow', label: 'Single Flow BoB', icon: FileText, url: getAppUrl('single-flow'), type: 'external' },
+    { id: 'bulk-bundle', label: 'Bulk Bundle Manager', icon: Package, url: getAppUrl('bulk-bundle'), type: 'external' },
+    { id: 'doctor-bob', label: 'Doctor BoB', icon: Stethoscope, url: getAppUrl('doctor-bob'), type: 'external' },
+    { id: 'doctor-bob-bulk', label: 'Doctor BoB - Bulk', icon: Activity, url: getAppUrl('doctor-bob-bulk'), type: 'external' },
   ];
 
   const handleMenuClick = (item) => {

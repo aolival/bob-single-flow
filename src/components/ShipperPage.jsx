@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Calendar, Package, FileText, AlertCircle, Save, X, RefreshCw, ChevronDown, ChevronUp, Menu } from 'lucide-react';
+import { getAppUrl } from '../config/appUrls';
 
 const ShipperPage = ({ onMenuToggle }) => {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -110,7 +111,7 @@ const ShipperPage = ({ onMenuToggle }) => {
                   <button
                     onClick={() => {
                       setShowUserDropdown(false);
-                      window.location.href = 'http://localhost:5174';
+                      window.location.href = getAppUrl('single-flow');
                     }}
                     className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
                   >
@@ -119,7 +120,7 @@ const ShipperPage = ({ onMenuToggle }) => {
                   <button
                     onClick={() => {
                       setShowUserDropdown(false);
-                      window.location.href = 'http://localhost:5173';
+                      window.location.href = getAppUrl('bulk-bundle');
                     }}
                     className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
                   >
@@ -128,7 +129,7 @@ const ShipperPage = ({ onMenuToggle }) => {
                   <button
                     onClick={() => {
                       setShowUserDropdown(false);
-                      window.location.href = 'http://localhost:5175';
+                      window.location.href = getAppUrl('doctor-bob');
                     }}
                     className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
                   >
@@ -137,7 +138,7 @@ const ShipperPage = ({ onMenuToggle }) => {
                   <button
                     onClick={() => {
                       setShowUserDropdown(false);
-                      window.location.href = 'http://localhost:5180';
+                      window.location.href = getAppUrl('doctor-bob-bulk');
                     }}
                     className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
                   >

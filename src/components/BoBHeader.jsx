@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { User, LogOut, Settings, Grid, ChevronDown, FileText, Package, Stethoscope, Menu } from 'lucide-react';
+import { User, LogOut, Settings, Grid, ChevronDown, FileText, Package, Stethoscope, Activity, Menu } from 'lucide-react';
+import { getAppUrl } from '../config/appUrls';
 
 export default function BoBHeader({ currentApp = 'bulk', onMenuToggle }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -18,22 +19,29 @@ export default function BoBHeader({ currentApp = 'bulk', onMenuToggle }) {
       id: 'bulk',
       name: 'Bulk Bundle Manager',
       icon: Package,
-      url: 'http://localhost:5173',
+      url: getAppUrl('bulk-bundle'),
       description: 'Process multiple loan bundles'
     },
     {
       id: 'single',
       name: 'Single Flow Builder',
       icon: FileText,
-      url: 'http://localhost:5174',
+      url: getAppUrl('single-flow'),
       description: 'Build individual bundles'
     },
     {
       id: 'doctor',
       name: 'Doctor BoB',
       icon: Stethoscope,
-      url: 'http://localhost:5175',
+      url: getAppUrl('doctor-bob'),
       description: 'Quality control & validation'
+    },
+    {
+      id: 'doctor-bulk',
+      name: 'Doctor BoB - Bulk',
+      icon: Activity,
+      url: getAppUrl('doctor-bob-bulk'),
+      description: 'Bulk QC & validation processing'
     }
   ];
 
