@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Single Flow BoB - Quick Tips Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #cbd5e1;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+            color: white;
+            padding: 25px 60px;
+            text-align: center;
+        }
+
+        .logo-section {
+            margin-bottom: 12px;
+        }
+
+        .logo {
+            display: inline-block;
+            background: white;
+            padding: 12px 28px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-text {
+            font-size: 32px;
+            font-weight: 500;
+            color: #9ACD32;
+            letter-spacing: -1px;
+        }
+
+        .logo-subtext {
+            font-size: 13px;
+            font-weight: 400;
+            color: #5A5A5A;
+            letter-spacing: 3px;
+            margin-left: 0px;
+        }
+
+        .header h1 {
+            font-size: 30px;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 15px;
+            opacity: 0.95;
+        }
+
+        .production-badge {
+            display: inline-block;
+            background: #9ACD32;
+            color: #1a1a1a;
+            padding: 6px 18px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .prod-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 6px 14px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: white;
+            text-decoration: none;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .prod-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .intro-section {
+            background: #f0fdfa;
+            border-left: 4px solid #14b8a6;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+
+        .intro-section h2 {
+            color: #0d9488;
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+
+        .intro-section p {
+            color: #334155;
+            font-size: 16px;
+            line-height: 1.7;
+            margin-bottom: 8px;
+        }
+
+        .intro-section strong {
+            color: #14b8a6;
+        }
+
+        .intro-section a {
+            transition: color 0.2s;
+        }
+
+        .intro-section a:hover {
+            color: #14b8a6;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            background: #f8fafc;
+            border-left: 4px solid #14b8a6;
+            padding: 15px 20px;
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.2s;
+            user-select: none;
+        }
+
+        .section-title:hover {
+            background: #f1f5f9;
+        }
+
+        .section-chevron {
+            font-size: 24px;
+            transition: transform 0.3s ease;
+            color: #14b8a6;
+        }
+
+        .section-chevron.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .section-content {
+            max-height: 5000px;
+            overflow: hidden;
+            transition: max-height 0.4s ease, opacity 0.3s ease;
+            opacity: 1;
+        }
+
+        .section-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+        }
+
+        .tips-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .tip-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .tip-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .tip-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .tip-icon {
+            width: 36px;
+            height: 36px;
+            background: #14b8a6;
+            color: white;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .tip-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .tip-description {
+            font-size: 15px;
+            color: #475569;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+
+        .tip-steps {
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.6;
+            padding-left: 18px;
+        }
+
+        .tip-steps li {
+            margin-bottom: 4px;
+        }
+
+        .status-legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+        }
+
+        .status-badge {
+            padding: 5px 14px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-found {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-missing {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-na {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .status-complete {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-description {
+            font-size: 14px;
+            color: #475569;
+        }
+
+        .footer {
+            background: #f8fafc;
+            padding: 20px 40px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .footer p {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .divider {
+            height: 1px;
+            background: #e2e8f0;
+            margin: 30px 0;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            position: relative;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+            padding: 30px;
+            border-radius: 12px 12px 0 0;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 28px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .modal-icon {
+            width: 60px;
+            height: 60px;
+            background: white;
+            color: #14b8a6;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .modal-body {
+            padding: 40px;
+        }
+
+        .modal-description {
+            font-size: 18px;
+            color: #475569;
+            line-height: 1.7;
+            margin-bottom: 30px;
+        }
+
+        .modal-steps {
+            font-size: 16px;
+            color: #1e293b;
+            line-height: 1.8;
+            padding-left: 30px;
+        }
+
+        .modal-steps li {
+            margin-bottom: 12px;
+        }
+
+        .modal-steps strong {
+            color: #14b8a6;
+            font-weight: 600;
+        }
+
+        .tip-card {
+            cursor: pointer;
+        }
+
+        .tip-card:hover {
+            cursor: pointer;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+            }
+
+            .tip-card {
+                page-break-inside: avoid;
+            }
+
+            /* Expand all sections when printing */
+            .section-content {
+                max-height: none !important;
+                opacity: 1 !important;
+            }
+
+            .section-chevron {
+                display: none;
+            }
+
+            .section-title {
+                cursor: default;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-section">
+                <div class="logo">
+                    <span class="logo-text">CMG</span>
+                    <span class="logo-subtext">FINANCIAL</span>
+                </div>
+            </div>
+            <h1>Single Flow BoB - Quick Tips</h1>
+            <p>Lightweight Bundle Builder for Post-Close Operations</p>
+            <div class="production-badge">✓ Now Live in Production</div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Introduction -->
+            <div class="intro-section">
+                <h2>Welcome to Single Flow BoB</h2>
+                <p>
+                    Single Flow BoB is a <strong>lightweight, URL-based application</strong> designed to replace heavy BytePro LOS workflows
+                    for post-close shipping duties. This MVP tool automates document collection, validates completeness, and generates
+                    individual bundled PDF packages ready for shipping—with increased speed and streamlined value-add functions.
+                </p>
+                <p style="margin-top: 10px;">
+                    <strong>Built for Shippers:</strong> First-time users can quickly master the 3-step workflow to create shipping-ready
+                    PDF bundles without the complexity of legacy systems.
+                </p>
+            </div>
+
+            <!-- Getting Started -->
+            <div class="section">
+                <div class="section-title" onclick="toggleSection(this)">
+                    <span>📝 Getting Started (3 Simple Steps)</span>
+                    <span class="section-chevron">▼</span>
+                </div>
+                <div class="section-content">
+                <div class="tips-grid">
+                    <div class="tip-card">
+                        <div class="tip-header">
+                            <div class="tip-icon">1</div>
+                            <div class="tip-title">Enter Loan & Select Bundle</div>
+                        </div>
+                        <div class="tip-description">
+                            Simply enter the loan number and select bundle name - the stacking order grid automatically generates.
+                        </div>
+                        <ul class="tip-steps">
+                            <li><strong>Subject Loan:</strong> Enter the loan number</li>
+                            <li><strong>Bundle Name:</strong> Choose from ~80 shipping package options from dropdown</li>
+                            <li><strong>Auto-Generation:</strong> Stacking order grid with document manager upload status automatically populates</li>
+                            <li>No additional button click needed - it's that simple!</li>
+                        </ul>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-header">
+                            <div class="tip-icon">2</div>
+                            <div class="tip-title">Review Stacking Order Status</div>
+                        </div>
+                        <div class="tip-description">
+                            Review the automatically generated stacking order to verify document status before building.
+                        </div>
+                        <ul class="tip-steps">
+                            <li>Grid displays all required documents in predetermined shipping order</li>
+                            <li><strong>Found:</strong> Documents show count of approved versions in document manager</li>
+                            <li><strong>Missing:</strong> Documents need attention (not in system or not approved)</li>
+                            <li><strong>Note:</strong> Use BytePro for document verification/management (direct UI access coming soon)</li>
+                            <li>Use filters to focus on specific document categories</li>
+                        </ul>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-header">
+                            <div class="tip-icon">3</div>
+                            <div class="tip-title">Build Bundle & Generate Package</div>
+                        </div>
+                        <div class="tip-description">
+                            Once confident with stacking order state, build the final PDF package ready for shipping.
+                        </div>
+                        <ul class="tip-steps">
+                            <li>Verify all required documents show "Found" status</li>
+                            <li>Click <strong>"Build Bundle"</strong> to start package generation</li>
+                            <li>Bundling spinner indicates process is in progress</li>
+                            <li>Download completed package for shipping workflow</li>
+                        </ul>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- Document Status Guide -->
+            <div class="section">
+                <div class="section-title" onclick="toggleSection(this)">
+                    <span>📋 Understanding Document Status</span>
+                    <span class="section-chevron">▼</span>
+                </div>
+                <div class="section-content">
+                <div class="status-legend">
+                    <div class="status-item">
+                        <span class="status-badge status-found">Found</span>
+                        <span class="status-description">Document is available and ready to bundle (shows count of approved versions in document manager)</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-badge status-missing">Missing</span>
+                        <span class="status-description">Document is part of master stacking order for this bundle but either does not exist in document manager OR exists without "approved" status</span>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Key Features -->
+            <div class="section">
+                <div class="section-title" onclick="toggleSection(this)">
+                    <span>⚡ Key Features & Tips</span>
+                    <span class="section-chevron">▼</span>
+                </div>
+                <div class="section-content">
+                <div class="tips-grid">
+                    <div class="tip-card">
+                        <div class="tip-header">
+                            <div class="tip-icon">🔍</div>
+                            <div class="tip-title">Document Categories & Filters</div>
+                        </div>
+                        <div class="tip-description">
+                            Documents are organized by category with filters to quickly focus on what needs attention.
+                        </div>
+                        <ul class="tip-steps">
+                            <li><strong>Categories:</strong> Application, Credit, Property, Income, Assets, Title, Insurance, Closing</li>
+                            <li><strong>Filter by Status:</strong> All Documents, Missing Docs, Found Docs</li>
+                            <li><strong>Category Filter:</strong> Narrow view by specific document category</li>
+                            <li>Found documents show count of approved versions in document manager</li>
+                        </ul>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-header">
+                            <div class="tip-icon">📦</div>
+                            <div class="tip-title">Bundle Preview, Download & Post-Close Upload</div>
+                        </div>
+                        <div class="tip-description">
+                            Complete the shipping workflow by previewing, downloading, and uploading confirmation documents.
+                        </div>
+                        <ul class="tip-steps">
+                            <li><strong>Preview:</strong> Review complete PDF package with proper page ordering</li>
+                            <li><strong>Download:</strong> Save bundle to local or network drive for shipping delivery</li>
+                            <li><strong>Upload Confirmations:</strong> Use upload icon to attach investor delivery confirmations</li>
+                            <li><strong>Upload Adhoc Docs:</strong> Attach shipping-related documents back to loan file</li>
+                            <li>All uploaded documents automatically link for record-keeping</li>
+                        </ul>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-header">
+                            <div class="tip-icon">🔄</div>
+                            <div class="tip-title">Refresh & Reload</div>
+                        </div>
+                        <div class="tip-description">
+                            Keep your stacking order up-to-date with the latest document status from the system.
+                        </div>
+                        <ul class="tip-steps">
+                            <li>Click <strong>"Refresh Stacking Order"</strong> to reload status</li>
+                            <li>System re-queries for current document availability</li>
+                            <li>Updated counts reflect in document filter tabs</li>
+                            <li>Build button enables when all required docs are found</li>
+                        </ul>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Workflow Best Practices -->
+            <div class="section">
+                <div class="section-title" onclick="toggleSection(this)">
+                    <span>✨ Workflow Best Practices</span>
+                    <span class="section-chevron">▼</span>
+                </div>
+                <div class="section-content">
+                <div class="tips-grid">
+                    <div class="tip-card">
+                        <div class="tip-header">
+                            <div class="tip-icon">✅</div>
+                            <div class="tip-title">Before Building</div>
+                        </div>
+                        <ul class="tip-steps">
+                            <li>Verify all stacking order documents show "Found" status with approved versions</li>
+                            <li>Review document count in each category filter tab</li>
+                            <li>Confirm bundle name matches shipping package requirements</li>
+                            <li><strong>Multiple Simultaneous Builds:</strong> You can open multiple browser tabs to bundle loans simultaneously, but increased API calls may impact performance and extend completion time for all bundles</li>
+                            <li><strong>Network Performance:</strong> Low internet upload speeds (especially outside office/direct network) can slow bundle completion. Test your connection speed by searching "speed test" in Google</li>
+                        </ul>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-header">
+                            <div class="tip-icon">⚡</div>
+                            <div class="tip-title">During Build Process</div>
+                        </div>
+                        <ul class="tip-steps">
+                            <li>Build time varies based on several factors: stacking order size, number of documents found, simultaneous bundles running, and your internet bandwidth</li>
+                            <li>Beta testing shows typical bundles (50-175 MB) often complete in under 30 seconds</li>
+                            <li>Watch for the bundling spinner indicator showing work in progress</li>
+                            <li>Do not navigate away or refresh page during build</li>
+                            <li>If build fails, check error message for specific details</li>
+                        </ul>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-header">
+                            <div class="tip-icon">🎯</div>
+                            <div class="tip-title">After Completion</div>
+                        </div>
+                        <ul class="tip-steps">
+                            <li>Download PDF package to local or network location</li>
+                            <li>Verify PDF opens correctly and pages are in order</li>
+                            <li>Navigate to Shipper Management for post-close tasks</li>
+                            <li>Click "Clear & Start New" for next shipping package</li>
+                        </ul>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Troubleshooting -->
+            <div class="section">
+                <div class="section-title" onclick="toggleSection(this)">
+                    <span>🔧 Common Issues & Items to Be Aware Of</span>
+                    <span class="section-chevron">▼</span>
+                </div>
+                <div class="section-content">
+                <div class="tips-grid">
+                    <div class="tip-card">
+                        <div class="tip-header">
+                            <div class="tip-icon">⚠️</div>
+                            <div class="tip-title">"Stacking Order Failed to Load"</div>
+                        </div>
+                        <ul class="tip-steps">
+                            <li>Verify loan number is correct (no extra spaces)</li>
+                            <li>Confirm loan exists in the system</li>
+                            <li>Check network connectivity</li>
+                            <li>Try refreshing page and re-entering loan information</li>
+                        </ul>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-header">
+                            <div class="tip-icon">⚠️</div>
+                            <div class="tip-title">"Bundle Build Failed"</div>
+                        </div>
+                        <ul class="tip-steps">
+                            <li>Check for documents showing "Missing" status</li>
+                            <li>Verify missing documents either don't exist or lack "approved" status</li>
+                            <li>Review error message for specific issue</li>
+                            <li>Click "Refresh Stacking Order" and retry build</li>
+                        </ul>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-header">
+                            <div class="tip-icon">⏱️</div>
+                            <div class="tip-title">Large File Upload Timeout (≥ 300MB)</div>
+                        </div>
+                        <div class="tip-description">
+                            BytePro has a 5-minute timeout rule. Files ≥ 300MB may upload to Azure cloud successfully but fail to ingest into BytePro database after multiple retries.
+                        </div>
+                        <ul class="tip-steps">
+                            <li><strong>Email Notification:</strong> "A document could not be sent to LOS after 5 tries. It has been marked as 'Draft'"</li>
+                            <li>Includes loan number, document type, title, and timestamp</li>
+                            <li><strong>Solution:</strong> Split large packages into smaller files before uploading</li>
+                            <li>No system fix available - file size limitation is a known constraint</li>
+                        </ul>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Training & Support -->
+            <div class="section">
+                <div class="section-title" onclick="toggleSection(this)">
+                    <span>📚 Training & Support Resources</span>
+                    <span class="section-chevron">▼</span>
+                </div>
+                <div class="section-content">
+                <div class="intro-section">
+                    <h2>CMG Operations Learning & Development</h2>
+                    <p>
+                        The <strong>CMG Operations Learning & Development team</strong> has comprehensive workflow training materials
+                        available to support your transition to the BoB platform. If you encounter challenges with early user adoption
+                        or need assistance with the platform, our team is here to help.
+                    </p>
+                    <p style="margin-top: 15px;">
+                        <strong style="color: #1e293b;">Primary Training Contact:</strong><br>
+                        <span style="font-weight: 600; font-size: 16px; color: #1e293b;">Michelle McKean</span><br>
+                        <a href="mailto:mmckean@cmgfi.com" style="color: #0d9488; text-decoration: underline; font-weight: 500; font-size: 15px;">
+                            mmckean@cmgfi.com
+                        </a>
+                    </p>
+                    <p style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                        <strong style="color: #1e293b;">Support Email (System Issues & Bugs):</strong><br>
+                        <a href="mailto:BundlerSupportCMGDocs@cmgfi.com" style="color: #0d9488; text-decoration: underline; font-weight: 500; font-size: 15px;">
+                            BundlerSupportCMGDocs@cmgfi.com
+                        </a>
+                        <br>
+                        <span style="font-size: 13px; color: #64748b; font-style: italic; margin-top: 6px; display: inline-block;">
+                            For unexpected system behavior or bug reports. Response typically within one business day.
+                        </span>
+                    </p>
+                    <p style="margin-top: 15px;">
+                        <strong style="color: #1e293b;">Access Production Application:</strong><br>
+                        <a href="https://docs.clear.online/bundle-builder" target="_blank" style="color: #0d9488; text-decoration: underline; font-weight: 500; font-size: 15px;">
+                            https://docs.clear.online/bundle-builder
+                        </a>
+                    </p>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>CMG Financial - Single Flow BoB Quick Tips</strong></p>
+            <p>MVP Phase 1 - Production Launch: February 2026 | Version 1.0</p>
+            <p style="margin-top: 8px; color: #14b8a6;">
+                Questions? Contact your shipping workflow administrator.
+            </p>
+        </div>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" id="tipModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+                <div class="modal-icon" id="modalIcon"></div>
+                <h2 class="modal-title" id="modalTitle"></h2>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description" id="modalDescription"></p>
+                <ul class="modal-steps" id="modalSteps"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle section collapse/expand
+        function toggleSection(titleElement) {
+            const content = titleElement.nextElementSibling;
+            const chevron = titleElement.querySelector('.section-chevron');
+
+            content.classList.toggle('collapsed');
+            chevron.classList.toggle('collapsed');
+        }
+
+        // Make all tip cards clickable
+        document.addEventListener('DOMContentLoaded', function() {
+            // Collapse all sections by default except the first one (Getting Started)
+            const allSections = document.querySelectorAll('.section-content');
+            const allChevrons = document.querySelectorAll('.section-chevron');
+
+            allSections.forEach((section, index) => {
+                if (index > 0) { // Keep first section (Getting Started) open
+                    section.classList.add('collapsed');
+                }
+            });
+
+            allChevrons.forEach((chevron, index) => {
+                if (index > 0) { // Rotate chevrons for collapsed sections
+                    chevron.classList.add('collapsed');
+                }
+            });
+
+            const tipCards = document.querySelectorAll('.tip-card');
+
+            tipCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    openModal(this);
+                });
+            });
+
+            // Close modal when clicking outside
+            document.getElementById('tipModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+
+            // Close modal with ESC key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                }
+            });
+        });
+
+        function openModal(card) {
+            const modal = document.getElementById('tipModal');
+            const icon = card.querySelector('.tip-icon').textContent;
+            const title = card.querySelector('.tip-title').textContent;
+            const description = card.querySelector('.tip-description')?.textContent || '';
+            const steps = card.querySelector('.tip-steps');
+
+            document.getElementById('modalIcon').textContent = icon;
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalDescription').textContent = description;
+
+            // Copy steps list
+            const modalSteps = document.getElementById('modalSteps');
+            modalSteps.innerHTML = '';
+            if (steps) {
+                const stepItems = steps.querySelectorAll('li');
+                stepItems.forEach(item => {
+                    const li = document.createElement('li');
+                    li.innerHTML = item.innerHTML;
+                    modalSteps.appendChild(li);
+                });
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('tipModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    </script>
+</body>
+</html>
