@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Single Flow BoB - Quick Tips Guide</title>
+    <title>BoB - Single Flow Path - Quick Tips Guide</title>
     <style>
         * {
             margin: 0;
@@ -189,6 +189,18 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
+        }
+
+        .tips-grid-two {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .tips-grid-two {
+                grid-template-columns: 1fr;
+            }
         }
 
         .tip-card {
@@ -486,7 +498,7 @@
                     <span class="logo-subtext">FINANCIAL</span>
                 </div>
             </div>
-            <h1>Single Flow BoB - Quick Tips</h1>
+            <h1>BoB - Single Flow Path - Quick Tips</h1>
             <p>Lightweight Bundle Builder for Post-Close Operations</p>
             <div class="production-badge">✓ Now Live in Production</div>
         </div>
@@ -495,11 +507,13 @@
         <div class="content">
             <!-- Introduction -->
             <div class="intro-section">
-                <h2>Welcome to Single Flow BoB</h2>
+                <h2>Welcome to BoB - Single Flow Path</h2>
                 <p>
-                    Single Flow BoB is a <strong>lightweight, URL-based application</strong> designed to replace heavy BytePro LOS workflows
+                    BoB - Single Flow Path is a <strong>lightweight, URL-based application</strong> designed to replace heavy BytePro LOS workflows
                     for post-close shipping duties. This MVP tool automates document collection, validates completeness, and generates
-                    individual bundled PDF packages ready for shipping—with increased speed and streamlined value-add functions.
+                    individual bundled PDF packages ready for shipping—with increased speed and streamlined value-add functions. Unlike traditional
+                    workflows that lock users out of BytePro during bundle processing, BoB operates independently, enabling continuous productivity
+                    and allowing shippers to maintain system access for other critical tasks.
                 </p>
                 <p style="margin-top: 10px;">
                     <strong>Built for Shippers:</strong> First-time users can quickly master the 3-step workflow to create shipping-ready
@@ -606,6 +620,7 @@
                             Documents are organized by category with filters to quickly focus on what needs attention.
                         </div>
                         <ul class="tip-steps">
+                            <li><strong>Hide Not Applicable Docs:</strong> Automatically filters out documents not required for your specific loan transaction, eliminating clutter and focusing only on relevant missing items</li>
                             <li><strong>Categories:</strong> Application, Credit, Property, Income, Assets, Title, Insurance, Closing</li>
                             <li><strong>Filter by Status:</strong> All Documents, Missing Docs, Found Docs</li>
                             <li><strong>Category Filter:</strong> Narrow view by specific document category</li>
@@ -622,11 +637,11 @@
                             Complete the shipping workflow by previewing, downloading, and uploading confirmation documents.
                         </div>
                         <ul class="tip-steps">
+                            <li><strong>Download:</strong> Save bundle directly to desktop, temp folder, or local drive for immediate access and shipping delivery</li>
                             <li><strong>Preview:</strong> Review complete PDF package with proper page ordering</li>
-                            <li><strong>Download:</strong> Save bundle to local or network drive for shipping delivery</li>
                             <li><strong>Upload Confirmations:</strong> Use upload icon to attach investor delivery confirmations</li>
-                            <li><strong>Upload Adhoc Docs:</strong> Attach shipping-related documents back to loan file</li>
-                            <li>All uploaded documents automatically link for record-keeping</li>
+                            <li><strong>Upload Adhoc Docs:</strong> Add specific documents into final PDF output or upload directly to BytePro Docs storage for loan file record-keeping</li>
+                            <li>All uploaded documents automatically sync to BytePro Docs storage and link to the loan file</li>
                         </ul>
                     </div>
 
@@ -636,12 +651,12 @@
                             <div class="tip-title">Refresh & Reload</div>
                         </div>
                         <div class="tip-description">
-                            Keep your stacking order up-to-date with the latest document status from the system.
+                            Use the refresh icon to sync stacking order with the latest document changes made in BytePro.
                         </div>
                         <ul class="tip-steps">
-                            <li>Click <strong>"Refresh Stacking Order"</strong> to reload status</li>
-                            <li>System re-queries for current document availability</li>
-                            <li>Updated counts reflect in document filter tabs</li>
+                            <li>Click the <strong>refresh icon</strong> after adding or fixing missing documents in BytePro</li>
+                            <li>System re-queries for current document availability and approval status</li>
+                            <li>Updated statuses and counts refresh in real-time across all filter tabs</li>
                             <li>Build button enables when all required docs are found</li>
                         </ul>
                     </div>
@@ -658,17 +673,18 @@
                     <span class="section-chevron">▼</span>
                 </div>
                 <div class="section-content">
-                <div class="tips-grid">
+                <div class="tips-grid-two">
                     <div class="tip-card">
                         <div class="tip-header">
                             <div class="tip-icon">✅</div>
                             <div class="tip-title">Before Building</div>
                         </div>
                         <ul class="tip-steps">
-                            <li>Verify all stacking order documents show "Found" status with approved versions</li>
+                            <li>Verify stacking order grid reflects all applicable docs needed for this bundle. Note: Phase 1 may show some non-applicable docs—full filtering coming with continuous improvements</li>
+                            <li>Confirm all required documents show "Found" status with approved versions</li>
                             <li>Review document count in each category filter tab</li>
                             <li>Confirm bundle name matches shipping package requirements</li>
-                            <li><strong>Multiple Simultaneous Builds:</strong> You can open multiple browser tabs to bundle loans simultaneously, but increased API calls may impact performance and extend completion time for all bundles</li>
+                            <li><strong>Multi-Page Productivity Power:</strong> While not a BytePro launch item yet, BoB is designed to let you open multiple browser pages using the direct URL link (see Training & Support section below) to maximize your workflow—build, download, and upload across multiple loans simultaneously! Note: Multiple sessions increase API server calls, which may temporarily impact network performance during active processing</li>
                             <li><strong>Network Performance:</strong> Low internet upload speeds (especially outside office/direct network) can slow bundle completion. Test your connection speed by searching "speed test" in Google</li>
                         </ul>
                     </div>
@@ -676,27 +692,15 @@
                     <div class="tip-card">
                         <div class="tip-header">
                             <div class="tip-icon">⚡</div>
-                            <div class="tip-title">During Build Process</div>
+                            <div class="tip-title">During Build Process & Completion</div>
                         </div>
                         <ul class="tip-steps">
                             <li>Build time varies based on several factors: stacking order size, number of documents found, simultaneous bundles running, and your internet bandwidth</li>
-                            <li>Beta testing shows typical bundles (50-175 MB) often complete in under 30 seconds</li>
+                            <li>Initial production beta testing shows bundles (50-175 MB) running approximately 2-3 full minutes faster than BytePro counterpart—in some cases completing in under 60 seconds</li>
                             <li>Watch for the bundling spinner indicator showing work in progress</li>
                             <li>Do not navigate away or refresh page during build</li>
-                            <li>If build fails, check error message for specific details</li>
-                        </ul>
-                    </div>
-
-                    <div class="tip-card">
-                        <div class="tip-header">
-                            <div class="tip-icon">🎯</div>
-                            <div class="tip-title">After Completion</div>
-                        </div>
-                        <ul class="tip-steps">
-                            <li>Download PDF package to local or network location</li>
-                            <li>Verify PDF opens correctly and pages are in order</li>
-                            <li>Navigate to Shipper Management for post-close tasks</li>
-                            <li>Click "Clear & Start New" for next shipping package</li>
+                            <li>If build fails, an error message displays with an instant retry option on the spot! Enhanced error messages with detailed troubleshooting guidance coming soon to help you resolve issues even faster</li>
+                            <li><strong>Upon Success:</strong> Bundle ready! Download your PDF package, verify pages are in order, then click "Clear & Start New" to process your next loan</li>
                         </ul>
                     </div>
                 </div>
@@ -723,6 +727,8 @@
                             <li>Confirm loan exists in the system</li>
                             <li>Check network connectivity</li>
                             <li>Try refreshing page and re-entering loan information</li>
+                            <li><strong>BytePro Launch Tool Issue?</strong> If the launch menu from BytePro isn't working, contact the BytePro team for resolution</li>
+                            <li><strong>Pro Tip:</strong> Bypass launch issues entirely by opening BoB directly in any web browser using the URL in the Training & Support section below—instant access, no launch menu required! (See Multi-Page Productivity Power in Best Practices for even more ways to maximize this feature)</li>
                         </ul>
                     </div>
 
@@ -732,10 +738,10 @@
                             <div class="tip-title">"Bundle Build Failed"</div>
                         </div>
                         <ul class="tip-steps">
-                            <li>Check for documents showing "Missing" status</li>
-                            <li>Verify missing documents either don't exist or lack "approved" status</li>
-                            <li>Review error message for specific issue</li>
+                            <li>Use instant retry option displayed with error message (see Workflow Best Practices for details)</li>
+                            <li>Check for documents showing "Missing" status and verify they exist with "approved" status</li>
                             <li>Click "Refresh Stacking Order" and retry build</li>
+                            <li><strong>Cross-Platform Advantage:</strong> If issue persists, attempt the same loan in BytePro. If BytePro also fails, you've quickly identified it's a systemic gap (not BoB-specific) and can escalate accordingly. Having both platforms helps pinpoint root causes faster—a valuable diagnostic tool while we explore improved error interactions for future releases</li>
                         </ul>
                     </div>
 
@@ -745,13 +751,13 @@
                             <div class="tip-title">Large File Upload Timeout (≥ 300MB)</div>
                         </div>
                         <div class="tip-description">
-                            BytePro has a 5-minute timeout rule. Files ≥ 300MB may upload to Azure cloud successfully but fail to ingest into BytePro database after multiple retries.
+                            Here's what's happening behind the scenes: Files ≥ 300MB upload successfully to Azure cloud storage (BoB shows success banner ✓), but BytePro's 5-minute database ingestion timeout causes failures during the handoff from cloud to LOS. This is a known architectural challenge we're actively exploring.
                         </div>
                         <ul class="tip-steps">
-                            <li><strong>Email Notification:</strong> "A document could not be sent to LOS after 5 tries. It has been marked as 'Draft'"</li>
-                            <li>Includes loan number, document type, title, and timestamp</li>
-                            <li><strong>Solution:</strong> Split large packages into smaller files before uploading</li>
-                            <li>No system fix available - file size limitation is a known constraint</li>
+                            <li><strong>The Timeline:</strong> BoB confirms upload success immediately (because cloud storage succeeded), but BytePro database ingestion runs 5 retry attempts to upload into LOS—a period that can take approximately 5-15 minutes before triggering the email notification</li>
+                            <li><strong>Email Alert:</strong> "A document could not be sent to LOS after 5 tries. It has been marked as 'Draft'" (includes loan number, document type, title, and timestamp)</li>
+                            <li><strong>Action Required:</strong> Once email arrives (5-15 min post-upload), you'll need to address the failed upload—one viable solution is splitting the package into files under 300MB and re-uploading</li>
+                            <li><strong>Pro Tip:</strong> Proactively split files approaching 300MB before uploading to avoid the retry cycle entirely</li>
                         </ul>
                     </div>
                 </div>
@@ -767,12 +773,15 @@
                     <span class="section-chevron">▼</span>
                 </div>
                 <div class="section-content">
-                <div class="intro-section">
+                <div class="intro-section" onclick="openTrainingModal()" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='';">
                     <h2>CMG Operations Learning & Development</h2>
                     <p>
                         The <strong>CMG Operations Learning & Development team</strong> has comprehensive workflow training materials
                         available to support your transition to the BoB platform. If you encounter challenges with early user adoption
                         or need assistance with the platform, our team is here to help.
+                    </p>
+                    <p style="margin-top: 12px; padding: 12px; background: #f0fdfa; border-left: 3px solid #14b8a6; border-radius: 4px;">
+                        <strong style="color: #0d9488;">Note:</strong> This Quick Tips guide is designed as a <strong>supplementary resource</strong> to complement CMG Ops Learning & Development's formal training materials—not replace them. Use this guide as an on-the-go reference for real-time challenges, quick reminders, and additional context as issues arise during your workflow.
                     </p>
                     <p style="margin-top: 15px;">
                         <strong style="color: #1e293b;">Primary Training Contact:</strong><br>
@@ -797,18 +806,37 @@
                             https://docs.clear.online/bundle-builder
                         </a>
                     </p>
+                    <p style="margin-top: 15px; text-align: center; color: #0d9488; font-size: 14px; font-style: italic;">
+                        💡 Click anywhere to view in expanded modal
+                    </p>
                 </div>
+                </div>
+            </div>
+
+            <!-- Thank You Section -->
+            <div class="section">
+                <div class="section-title" onclick="toggleSection(this)">
+                    <span>💚 Thank You & Happy Bundling!</span>
+                    <span class="section-chevron">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="intro-section" onclick="openThankYouModal()" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='';">
+                        <h2 style="text-align: center; margin-bottom: 10px;">Thank You & Happy Bundling!</h2>
+                        <p style="text-align: center; font-size: 16px; color: #475569;">
+                            We appreciate your dedication to making post-close shipping operations more efficient.
+                        </p>
+                        <p style="margin-top: 15px; text-align: center; color: #0d9488; font-size: 14px; font-style: italic;">
+                            💡 Click to meet BoB the Builder!
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Footer -->
         <div class="footer">
-            <p><strong>CMG Financial - Single Flow BoB Quick Tips</strong></p>
+            <p><strong>CMG Financial - BoB - Single Flow Path Quick Tips</strong></p>
             <p>MVP Phase 1 - Production Launch: February 2026 | Version 1.0</p>
-            <p style="margin-top: 8px; color: #14b8a6;">
-                Questions? Contact your shipping workflow administrator.
-            </p>
         </div>
     </div>
 
@@ -827,6 +855,79 @@
         </div>
     </div>
 
+    <!-- Thank You Modal -->
+    <div class="modal-overlay" id="thankYouModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <button class="modal-close" onclick="closeThankYouModal()" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); border: none; color: #0d9488; font-size: 28px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10;">&times;</button>
+            <div style="text-align: center; padding: 60px 40px 40px;">
+                <!-- Speech bubble ABOVE construction worker -->
+                <div style="position: relative; display: inline-block; margin-bottom: 30px;">
+                    <div style="background: white; border: 3px solid #0d9488; border-radius: 20px; padding: 20px 30px; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <p style="margin: 0; font-size: 22px; font-weight: 600; color: #0d9488; line-height: 1.4;">Hi, I'm BoB<br>the Builder!</p>
+                        <!-- Speech bubble arrow pointing DOWN - outer border -->
+                        <div style="position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 18px solid #0d9488;"></div>
+                        <!-- Speech bubble arrow pointing DOWN - inner white -->
+                        <div style="position: absolute; bottom: -13px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 15px solid white;"></div>
+                    </div>
+                </div>
+                <!-- Construction worker BELOW speech bubble -->
+                <div style="font-size: 100px; margin-bottom: 30px;">👷</div>
+                <h2 style="color: #0d9488; font-size: 32px; margin-bottom: 0; font-weight: 600;">Thank You &<br>Happy Bundling!</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Training & Support Modal -->
+    <div class="modal-overlay" id="trainingModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <button class="modal-close" onclick="closeTrainingModal()">&times;</button>
+                <div class="modal-icon">📚</div>
+                <h2 class="modal-title">Training & Support Resources</h2>
+            </div>
+            <div class="modal-body">
+                <h3 style="color: #0d9488; font-size: 22px; margin-bottom: 10px;">CMG Operations Learning & Development</h3>
+                <p style="font-size: 16px; color: #475569; line-height: 1.7; margin-bottom: 15px;">
+                    The <strong>CMG Operations Learning & Development team</strong> has comprehensive workflow training materials
+                    available to support your transition to the BoB platform. If you encounter challenges with early user adoption
+                    or need assistance with the platform, our team is here to help.
+                </p>
+                <div style="margin: 20px 0; padding: 15px; background: #f0fdfa; border-left: 4px solid #14b8a6; border-radius: 4px;">
+                    <p style="margin: 0; font-size: 15px; color: #475569; line-height: 1.6;">
+                        <strong style="color: #0d9488;">Note:</strong> This Quick Tips guide is designed as a <strong>supplementary resource</strong> to complement CMG Ops Learning & Development's formal training materials—not replace them. Use this guide as an on-the-go reference for real-time challenges, quick reminders, and additional context as issues arise during your workflow.
+                    </p>
+                </div>
+                <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border-radius: 8px;">
+                    <p style="margin-bottom: 15px;">
+                        <strong style="color: #1e293b; font-size: 16px;">Primary Training Contact:</strong><br>
+                        <span style="font-weight: 600; font-size: 17px; color: #1e293b; margin-top: 5px; display: inline-block;">Michelle McKean</span><br>
+                        <a href="mailto:mmckean@cmgfi.com" style="color: #0d9488; text-decoration: underline; font-weight: 500; font-size: 16px;">
+                            mmckean@cmgfi.com
+                        </a>
+                    </p>
+                    <div style="height: 1px; background: #e2e8f0; margin: 20px 0;"></div>
+                    <p style="margin-bottom: 15px;">
+                        <strong style="color: #1e293b; font-size: 16px;">Support Email (System Issues & Bugs):</strong><br>
+                        <a href="mailto:BundlerSupportCMGDocs@cmgfi.com" style="color: #0d9488; text-decoration: underline; font-weight: 500; font-size: 16px; margin-top: 5px; display: inline-block;">
+                            BundlerSupportCMGDocs@cmgfi.com
+                        </a>
+                        <br>
+                        <span style="font-size: 14px; color: #64748b; font-style: italic; margin-top: 8px; display: inline-block;">
+                            For unexpected system behavior or bug reports. Response typically within one business day.
+                        </span>
+                    </p>
+                    <div style="height: 1px; background: #e2e8f0; margin: 20px 0;"></div>
+                    <p style="margin-bottom: 0;">
+                        <strong style="color: #1e293b; font-size: 16px;">Access Production Application:</strong><br>
+                        <a href="https://docs.clear.online/bundle-builder" target="_blank" style="color: #0d9488; text-decoration: underline; font-weight: 500; font-size: 16px; margin-top: 5px; display: inline-block;">
+                            https://docs.clear.online/bundle-builder
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Toggle section collapse/expand
         function toggleSection(titleElement) {
@@ -839,20 +940,16 @@
 
         // Make all tip cards clickable
         document.addEventListener('DOMContentLoaded', function() {
-            // Collapse all sections by default except the first one (Getting Started)
+            // Collapse ALL sections by default
             const allSections = document.querySelectorAll('.section-content');
             const allChevrons = document.querySelectorAll('.section-chevron');
 
-            allSections.forEach((section, index) => {
-                if (index > 0) { // Keep first section (Getting Started) open
-                    section.classList.add('collapsed');
-                }
+            allSections.forEach((section) => {
+                section.classList.add('collapsed');
             });
 
-            allChevrons.forEach((chevron, index) => {
-                if (index > 0) { // Rotate chevrons for collapsed sections
-                    chevron.classList.add('collapsed');
-                }
+            allChevrons.forEach((chevron) => {
+                chevron.classList.add('collapsed');
             });
 
             const tipCards = document.querySelectorAll('.tip-card');
@@ -910,6 +1007,51 @@
             modal.classList.remove('active');
             document.body.style.overflow = '';
         }
+
+        function openThankYouModal() {
+            const modal = document.getElementById('thankYouModal');
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeThankYouModal() {
+            const modal = document.getElementById('thankYouModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function openTrainingModal() {
+            const modal = document.getElementById('trainingModal');
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeTrainingModal() {
+            const modal = document.getElementById('trainingModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Close modals with ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeThankYouModal();
+                closeTrainingModal();
+            }
+        });
+
+        // Close when clicking outside
+        document.getElementById('thankYouModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeThankYouModal();
+            }
+        });
+
+        document.getElementById('trainingModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeTrainingModal();
+            }
+        });
     </script>
 </body>
 </html>
