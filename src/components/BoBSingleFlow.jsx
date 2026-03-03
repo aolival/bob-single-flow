@@ -154,14 +154,14 @@ const BoBSingleFlow = () => {
     if (bundle === 'C2C - QC Bundle') {
       console.log(`📄 Generating mock data for: ${bundle}`);
 
-      // Pick 2 random indices for Missing and Possible Find - Inactive
+      // Pick 2 random indices for Missing and Located - Not Approved
       const totalDocs = requiredDocuments.length;
       const missingIndex = Math.floor(Math.random() * totalDocs);
-      let possibleFindIndex = Math.floor(Math.random() * totalDocs);
+      let locatedNotApprovedIndex = Math.floor(Math.random() * totalDocs);
 
-      // Ensure possibleFindIndex is different from missingIndex
-      while (possibleFindIndex === missingIndex) {
-        possibleFindIndex = Math.floor(Math.random() * totalDocs);
+      // Ensure locatedNotApprovedIndex is different from missingIndex
+      while (locatedNotApprovedIndex === missingIndex) {
+        locatedNotApprovedIndex = Math.floor(Math.random() * totalDocs);
       }
 
       // Generate mock documents with statuses
@@ -172,10 +172,10 @@ const BoBSingleFlow = () => {
         if (index === missingIndex) {
           status = 'Missing';
           foundCount = 0;
-        } else if (index === possibleFindIndex) {
-          status = 'Pending Review - Inactive';
+        } else if (index === locatedNotApprovedIndex) {
+          status = 'Located - Not Approved';
           foundCount = 1;
-          // 25% chance of having multiple inactive documents found (2 or 3)
+          // 25% chance of having multiple located documents (2 or 3)
           const hasMultiple = Math.random() < 0.25;
           if (hasMultiple) {
             foundCount = Math.random() < 0.5 ? 2 : 3;
@@ -194,21 +194,21 @@ const BoBSingleFlow = () => {
           status: status,
           displayOrder: doc.displayOrder,
           foundCount: foundCount,
-          documents: status === 'Found' || status === 'Pending Review - Inactive' ? [{ id: 1, name: `${doc.documentType}.pdf` }] : [],
+          documents: status === 'Found' || status === 'Located - Not Approved' ? [{ id: 1, name: `${doc.documentType}.pdf` }] : [],
         };
       });
 
-      console.log(`✅ Mock Data Generated - Found: ${documents.filter(d => d.status === 'Found').length}, Missing: 1, Possible Find: 1`);
+      console.log(`✅ Mock Data Generated - Found: ${documents.filter(d => d.status === 'Found').length}, Missing: 1, Located - Not Approved: 1`);
       return documents;
     }
 
-    // For other bundles: Generate random preview with 80% Found, 10% Missing, 10% Inactive
+    // For other bundles: Generate random preview with 80% Found, 10% Missing, 10% Located - Not Approved
     console.log(`📄 Generating random preview for: ${bundle}`);
 
     const totalDocs = requiredDocuments.length;
     const missingCount = Math.ceil(totalDocs * 0.1); // 10%
-    const inactiveCount = Math.ceil(totalDocs * 0.1); // 10%
-    const foundCount = totalDocs - missingCount - inactiveCount; // Remaining 80%
+    const locatedNotApprovedCount = Math.ceil(totalDocs * 0.1); // 10%
+    const foundCount = totalDocs - missingCount - locatedNotApprovedCount; // Remaining 80%
 
     // Shuffle indices to randomly assign statuses
     const indices = Array.from({ length: totalDocs }, (_, i) => i);
@@ -217,9 +217,9 @@ const BoBSingleFlow = () => {
       [indices[i], indices[j]] = [indices[j], indices[i]];
     }
 
-    // Assign statuses: first missingCount as Missing, next inactiveCount as Inactive, rest as Found
+    // Assign statuses: first missingCount as Missing, next locatedNotApprovedCount as Located - Not Approved, rest as Found
     const missingIndices = new Set(indices.slice(0, missingCount));
-    const inactiveIndices = new Set(indices.slice(missingCount, missingCount + inactiveCount));
+    const locatedNotApprovedIndices = new Set(indices.slice(missingCount, missingCount + locatedNotApprovedCount));
 
     const documents = requiredDocuments.map((doc, index) => {
       let status = 'Found';
@@ -228,10 +228,10 @@ const BoBSingleFlow = () => {
       if (missingIndices.has(index)) {
         status = 'Missing';
         foundCountValue = 0;
-      } else if (inactiveIndices.has(index)) {
-        status = 'Pending Review - Inactive';
+      } else if (locatedNotApprovedIndices.has(index)) {
+        status = 'Located - Not Approved';
         foundCountValue = 1;
-        // 25% chance of having multiple inactive documents found (2 or 3)
+        // 25% chance of having multiple located documents (2 or 3)
         const hasMultiple = Math.random() < 0.25;
         if (hasMultiple) {
           foundCountValue = Math.random() < 0.5 ? 2 : 3;
@@ -250,11 +250,11 @@ const BoBSingleFlow = () => {
         status: status,
         displayOrder: doc.displayOrder,
         foundCount: foundCountValue,
-        documents: status === 'Found' || status === 'Pending Review - Inactive' ? [{ id: 1, name: `${doc.documentType}.pdf` }] : [],
+        documents: status === 'Found' || status === 'Located - Not Approved' ? [{ id: 1, name: `${doc.documentType}.pdf` }] : [],
       };
     });
 
-    console.log(`✅ Random Preview Generated - Found: ${foundCount}, Missing: ${missingCount}, Inactive: ${inactiveCount}`);
+    console.log(`✅ Random Preview Generated - Found: ${foundCount}, Missing: ${missingCount}, Located - Not Approved: ${locatedNotApprovedCount}`);
     return documents;
   };
 
@@ -327,7 +327,7 @@ const BoBSingleFlow = () => {
 
   const handleBuildBundle = () => {
     // Check if there are any inactive documents
-    const inactiveDocuments = stackingOrder.filter(doc => doc.status === 'Pending Review - Inactive');
+    const locatedNotApprovedDocuments = stackingOrder.filter(doc => doc.status === 'Located - Not Approved');
 
     if (inactiveDocuments.length > 0) {
       // Show warning modal if inactive documents exist
@@ -562,7 +562,7 @@ const BoBSingleFlow = () => {
     // If Missing OR Found/Inactive with multiple documents (foundCount > 1), show doc storage modal
     if (doc.status === 'Missing' ||
         (doc.status === 'Found' && doc.foundCount > 1) ||
-        (doc.status === 'Pending Review - Inactive' && doc.foundCount > 1)) {
+        (doc.status === 'Located - Not Approved' && doc.foundCount > 1)) {
       setSelectedDocType(doc.documentType);
       setShowDocStorageModal(true);
       // Reset filters when opening modal
@@ -576,7 +576,7 @@ const BoBSingleFlow = () => {
       });
       setExpandedCategories(expanded);
     } else if ((doc.status === 'Found' && doc.foundCount === 1) ||
-               (doc.status === 'Pending Review - Inactive' && doc.foundCount === 1)) {
+               (doc.status === 'Located - Not Approved' && doc.foundCount === 1)) {
       // For single Found (foundCount === 1) or single Inactive doc (foundCount === 1), show direct document viewer with metadata
       // In production, this would make an API call to fetch document details from EPS
       const docDetails = {
@@ -592,7 +592,7 @@ const BoBSingleFlow = () => {
       setViewingDocument(docDetails);
       // Initialize edited properties
       setEditedDocProperties({
-        status: doc.status === 'Pending Review - Inactive' ? 'inactive' : doc.status === 'Found' ? 'approved' : 'not-reviewed',
+        status: doc.status === 'Located - Not Approved' ? 'located-not-approved' : doc.status === 'Found' ? 'approved' : 'not-reviewed',
         documentName: docDetails.filename,
         documentType: '',
         expires: '',
@@ -650,10 +650,10 @@ const BoBSingleFlow = () => {
 
     // Convert dropdown values back to grid display format
     const newGridStatus =
-      editedDocProperties.status === 'inactive' ? 'Pending Review - Inactive' :
+      editedDocProperties.status === 'located-not-approved' ? 'Located - Not Approved' :
       editedDocProperties.status === 'approved' ? 'Found' :
       editedDocProperties.status === 'rejected' ? 'Missing' :
-      editedDocProperties.status === 'pending' ? 'Pending Review - Inactive' :
+      editedDocProperties.status === 'pending' ? 'Located - Not Approved' :
       'Missing';
 
     // Update the stacking order with new status
@@ -724,8 +724,8 @@ const BoBSingleFlow = () => {
       docs = docs.filter(d => d.status === 'Missing');
     } else if (activeStatusTab === 'found') {
       docs = docs.filter(d => d.status === 'Found');
-    } else if (activeStatusTab === 'pending') {
-      docs = docs.filter(d => d.status === 'Pending Review - Inactive');
+    } else if (activeStatusTab === 'located-not-approved') {
+      docs = docs.filter(d => d.status === 'Located - Not Approved');
     }
 
     // Filter by category
@@ -747,7 +747,7 @@ const BoBSingleFlow = () => {
   const filteredDocs = getFilteredDocs();
   const missingCount = stackingOrder.filter(d => d.status === 'Missing').length;
   const foundCount = stackingOrder.filter(d => d.status === 'Found').length;
-  const pendingCount = stackingOrder.filter(d => d.status === 'Pending Review - Inactive').length;
+  const locatedNotApprovedCount = stackingOrder.filter(d => d.status === 'Located - Not Approved').length;
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -1062,15 +1062,15 @@ const BoBSingleFlow = () => {
                     )}
                   </button>
                   <button
-                    onClick={() => setActiveStatusTab('pending')}
+                    onClick={() => setActiveStatusTab('located-not-approved')}
                     className={`px-4 py-2 rounded font-medium flex items-center text-xs ${
-                      activeStatusTab === 'pending'
+                      activeStatusTab === 'located-not-approved'
                         ? 'bg-white border-2 border-teal-600 text-teal-600'
                         : 'bg-white border border-gray-300 text-gray-600'
                     }`}
                   >
-                    Pending Review {pendingCount > 0 && (
-                      <span className="ml-2 px-2 py-0.5 bg-yellow-500 text-white text-xs rounded-full font-semibold">{pendingCount}</span>
+                    Located - Not Approved {locatedNotApprovedCount > 0 && (
+                      <span className="ml-2 px-2 py-0.5 bg-yellow-500 text-white text-xs rounded-full font-semibold">{locatedNotApprovedCount}</span>
                     )}
                   </button>
                   <button
@@ -1198,7 +1198,7 @@ const BoBSingleFlow = () => {
                               ? 'bg-red-100 text-red-800'
                               : 'bg-yellow-100 text-yellow-800'
                           }`}>
-                            {doc.status === 'Found' || doc.status === 'Pending Review - Inactive'
+                            {doc.status === 'Found' || doc.status === 'Located - Not Approved'
                               ? `${doc.status} - ${doc.foundCount}`
                               : doc.status}
                           </span>
@@ -1318,7 +1318,7 @@ const BoBSingleFlow = () => {
                   Inactive documents may not meet current compliance standards and could affect the validity of this bundle package.
                 </p>
                 <p className="text-xs text-yellow-700">
-                  {stackingOrder.filter(doc => doc.status === 'Pending Review - Inactive').length} inactive {stackingOrder.filter(doc => doc.status === 'Pending Review - Inactive').length === 1 ? 'document' : 'documents'} detected in this bundle.
+                  {stackingOrder.filter(doc => doc.status === 'Located - Not Approved').length} located but not approved {stackingOrder.filter(doc => doc.status === 'Located - Not Approved').length === 1 ? 'document' : 'documents'} detected in this bundle.
                 </p>
               </div>
               <p className="text-gray-600 mt-4 text-xs">
@@ -1601,7 +1601,7 @@ const BoBSingleFlow = () => {
                                  doc.status === 'not-reviewed' ? 'Not Reviewed' :
                                  doc.status === 'inactive' ? 'Inactive' :
                                  doc.status === 'rejected' ? 'Rejected' :
-                                 doc.status === 'pending' ? 'Pending Review' : doc.status}
+                                 doc.status === 'pending' ? 'Located - Not Approved' : doc.status}
                               </span>
                             </td>
                             <td className="px-3 py-2 text-gray-700">{category}</td>
