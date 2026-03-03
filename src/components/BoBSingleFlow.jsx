@@ -1036,6 +1036,44 @@ const BoBSingleFlow = () => {
             </div>
 
             <div className="p-4">
+              {/* Educational Info Banner */}
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <div className="text-blue-600 mt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-blue-800 mb-1">📋 New Enhanced Document Status System</p>
+                    <p className="text-xs text-blue-700 mb-2">We've improved how document statuses are reported to give you better visibility into document availability:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                      <div className="flex items-start gap-1.5">
+                        <span className="text-green-600 font-semibold">✓</span>
+                        <div>
+                          <span className="font-semibold text-green-800">Found - Approved & Ready:</span>
+                          <span className="text-blue-700"> Documents with approved status, ready for bundle inclusion</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-1.5">
+                        <span className="text-red-600 font-semibold">✗</span>
+                        <div>
+                          <span className="font-semibold text-red-800">Missing - Not Located:</span>
+                          <span className="text-blue-700"> Document does not exist in the BytePro loan file database</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-1.5">
+                        <span className="text-yellow-600 font-semibold">⚠</span>
+                        <div>
+                          <span className="font-semibold text-yellow-800">Located - Not Approved:</span>
+                          <span className="text-blue-700"> Document exists but has unapproved status (Not Reviewed, Rejected, Pending, or Inactive)</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Status Tabs and Actions */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
@@ -1056,8 +1094,9 @@ const BoBSingleFlow = () => {
                         ? 'bg-white border-2 border-teal-600 text-teal-600'
                         : 'bg-white border border-gray-300 text-gray-600'
                     }`}
+                    title="Documents not found in BytePro loan file database"
                   >
-                    Missing {missingCount > 0 && (
+                    Missing - Not Located in Loan File {missingCount > 0 && (
                       <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full font-semibold">{missingCount}</span>
                     )}
                   </button>
@@ -1068,6 +1107,7 @@ const BoBSingleFlow = () => {
                         ? 'bg-white border-2 border-teal-600 text-teal-600'
                         : 'bg-white border border-gray-300 text-gray-600'
                     }`}
+                    title="Documents found in loan file but status is Not Reviewed, Rejected, Pending Review, or Inactive"
                   >
                     Located - Not Approved {locatedNotApprovedCount > 0 && (
                       <span className="ml-2 px-2 py-0.5 bg-yellow-500 text-white text-xs rounded-full font-semibold">{locatedNotApprovedCount}</span>
@@ -1080,8 +1120,9 @@ const BoBSingleFlow = () => {
                         ? 'bg-white border-2 border-teal-600 text-teal-600'
                         : 'bg-white border border-gray-300 text-gray-600'
                     }`}
+                    title="Approved documents ready for bundle inclusion"
                   >
-                    Found {foundCount > 0 && <span className="ml-1">{foundCount}</span>}
+                    Found - Approved & Ready {foundCount > 0 && <span className="ml-1">{foundCount}</span>}
                   </button>
                 </div>
 
@@ -1200,6 +1241,8 @@ const BoBSingleFlow = () => {
                           }`}>
                             {doc.status === 'Found' || doc.status === 'Located - Not Approved'
                               ? `${doc.status} - ${doc.foundCount}`
+                              : doc.status === 'Missing'
+                              ? 'Missing - Not Located in Loan File'
                               : doc.status}
                           </span>
                         </td>
@@ -1306,16 +1349,16 @@ const BoBSingleFlow = () => {
           <div className="bg-white rounded-lg p-6 w-[500px]">
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle className="text-yellow-600" size={24} />
-              <h3 className="text-base font-semibold">Inactive Documents Detected</h3>
+              <h3 className="text-base font-semibold">Unapproved Documents Detected</h3>
             </div>
             <div className="mb-6">
               <p className="text-gray-700 mb-3 text-sm">
-                This bundle contains documents marked as <span className="font-semibold text-yellow-700">Inactive</span> that require review.
+                This bundle contains documents with status <span className="font-semibold text-yellow-700">Located - Not Approved</span> that require attention.
               </p>
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
                 <p className="text-xs font-semibold text-yellow-800 mb-2">⚠️ Important Notice:</p>
                 <p className="text-xs text-yellow-700 mb-2">
-                  Inactive documents may not meet current compliance standards and could affect the validity of this bundle package.
+                  These documents were found in the loan file but have not been approved for bundle inclusion. They may have statuses such as Not Reviewed, Rejected, Pending Review, or Inactive, which could affect bundle validity.
                 </p>
                 <p className="text-xs text-yellow-700">
                   {stackingOrder.filter(doc => doc.status === 'Located - Not Approved').length} located but not approved {stackingOrder.filter(doc => doc.status === 'Located - Not Approved').length === 1 ? 'document' : 'documents'} detected in this bundle.
