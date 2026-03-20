@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Download, CheckCircle, XCircle, Loader2, Upload, File, X, Search, ChevronDown, ChevronRight, Lock, Eye, Filter, AlertTriangle, Menu } from 'lucide-react';
+import { RefreshCw, Download, CheckCircle, XCircle, Loader2, Upload, File, X, Search, ChevronDown, ChevronRight, Lock, Eye, Filter, AlertTriangle, Menu, FolderOpen, Folder, ExternalLink, ArrowUpDown } from 'lucide-react';
 import { getLoanDocumentStatus } from '../services/epsDocumentApi';
 import { getAppUrl } from '../config/appUrls';
 import DocumentTemplateSelector from './documentTemplates/DocumentTemplateSelector';
@@ -48,6 +48,9 @@ const BoBSingleFlow = () => {
   const [editedDocProperties, setEditedDocProperties] = useState(null); // Track edited document properties
   const [showSaveSuccess, setShowSaveSuccess] = useState(false); // Show success message after save
   const [showBundlePreview, setShowBundlePreview] = useState(false); // Show bundled PDF preview
+  const [showDocsPanel, setShowDocsPanel] = useState(false); // Phase 3: Split-screen Stored Doc Manager
+  const [finalDocsExpanded, setFinalDocsExpanded] = useState({}); // Phase 3: expanded state for Final Docs categories
+  const [docPropertiesSlider, setDocPropertiesSlider] = useState(null); // Phase 3: doc clicked in Final Docs panel for slider
 
   // Navigation Panel State (Phase 4 Initiative)
   const [isNavPanelOpen, setIsNavPanelOpen] = useState(false); // Toggle navigation panel
@@ -615,6 +618,13 @@ const BoBSingleFlow = () => {
     }));
   };
 
+  const toggleFinalDocCategory = (category) => {
+    setFinalDocsExpanded(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
+
   const handleViewDocument = (doc, category) => {
     const docDetails = { ...doc, category };
     setViewingDocument(docDetails);
@@ -878,7 +888,8 @@ const BoBSingleFlow = () => {
       {/* Original Single Flow Content */}
       {currentPage === 'single-flow' && (
       <>
-      <div className="max-w-7xl mx-auto p-6">
+      <div className={`flex h-full`}>
+        <div className={`${showDocsPanel ? 'w-[60%]' : 'max-w-7xl mx-auto w-full'} p-6 transition-all duration-300`}>
         <h1 className="text-xl font-bold text-gray-800 mb-6">
           BoB (Builder of Bundles) | Single Loan Delivery
         </h1>
@@ -1128,11 +1139,15 @@ const BoBSingleFlow = () => {
 
                 <div className="flex items-center space-x-4">
                   <button
-                    onClick={() => setShowDocStorageModal(true)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-teal-100 text-teal-700 rounded hover:bg-teal-200 font-medium text-xs"
+                    onClick={() => setShowDocsPanel(prev => !prev)}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded font-medium text-xs transition-colors ${
+                      showDocsPanel
+                        ? 'bg-teal-600 text-white hover:bg-teal-700'
+                        : 'bg-teal-100 text-teal-700 hover:bg-teal-200'
+                    }`}
                   >
-                    <File size={14} />
-                    <span>View Stored Docs</span>
+                    <FolderOpen size={14} />
+                    <span>Stored Doc Manager</span>
                   </button>
                   <label className="flex items-center space-x-2 text-xs text-gray-700">
                     <input
@@ -1220,16 +1235,32 @@ const BoBSingleFlow = () => {
                     {filteredDocs.map((doc, index) => (
                       <tr key={index} className="hover:bg-gray-50">
                         <td className="px-6 py-4">
-                          <a
-                            href={`#docs-manager?type=${encodeURIComponent(doc.documentType)}&loan=${encodeURIComponent(subjectLoan)}`}
-                            onClick={(e) => handleDocumentClick(e, doc)}
-                            className="text-teal-600 hover:text-teal-800 font-medium underline text-xs cursor-pointer flex items-center gap-2"
-                          >
-                            {activeDocument === doc.documentType && (
-                              <Eye size={14} className="text-teal-600 flex-shrink-0" />
-                            )}
-                            {doc.documentType}
-                          </a>
+                          {doc.status === 'Found' && doc.foundCount === 1 ? (
+                            <a
+                              href={`https://docs.clear.online/bundle-builder?loanGuid=${encodeURIComponent(subjectLoan)}&docType=${encodeURIComponent(doc.documentType)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Open document in new browser tab"
+                              className="text-teal-600 hover:text-teal-800 font-medium underline text-xs cursor-pointer flex items-center gap-2"
+                            >
+                              {activeDocument === doc.documentType && (
+                                <Eye size={14} className="text-teal-600 flex-shrink-0" />
+                              )}
+                              {doc.documentType}
+                              <ExternalLink size={12} className="text-teal-500 flex-shrink-0" />
+                            </a>
+                          ) : (
+                            <a
+                              href={`#docs-manager?type=${encodeURIComponent(doc.documentType)}&loan=${encodeURIComponent(subjectLoan)}`}
+                              onClick={(e) => handleDocumentClick(e, doc)}
+                              className="text-teal-600 hover:text-teal-800 font-medium underline text-xs cursor-pointer flex items-center gap-2"
+                            >
+                              {activeDocument === doc.documentType && (
+                                <Eye size={14} className="text-teal-600 flex-shrink-0" />
+                              )}
+                              {doc.documentType}
+                            </a>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <span className={`px-2 py-1 rounded text-xs font-medium ${
@@ -1267,7 +1298,185 @@ const BoBSingleFlow = () => {
             </div>
           </div>
         )}
-      </div>
+        </div>{/* end left panel */}
+
+        {/* Right Panel: Final Documents in LOS */}
+        {showDocsPanel && (
+          <div className="w-[40%] sticky top-0 h-screen border-l border-gray-200 bg-white flex flex-col overflow-hidden z-10 relative">
+            {/* Panel Header */}
+            <div className="px-4 py-3 border-b bg-gray-50 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowDocsPanel(false)}
+                  className="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-medium hover:bg-teal-700"
+                >
+                  Stored Doc Manager
+                </button>
+                <span className="text-sm font-semibold text-gray-800">Final Documents in LOS</span>
+              </div>
+              <button
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-50"
+                title="Sync with LOS"
+              >
+                <RefreshCw size={13} />
+                LOS Document Sync
+              </button>
+            </div>
+
+            {/* Controls Bar */}
+            <div className="px-4 py-2 border-b bg-gray-50 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <button className="text-xs text-teal-600 hover:text-teal-800 font-medium">Select All</button>
+                <span className="text-gray-300">|</span>
+                <button
+                  className="text-xs text-teal-600 hover:text-teal-800 font-medium"
+                  onClick={() => setFinalDocsExpanded({})}
+                >
+                  Expand All
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-600">Filter by:</span>
+                <select className="px-2 py-1 border border-gray-300 rounded text-xs bg-white">
+                  <option value="">Select...</option>
+                  <option value="approved">Approved</option>
+                  <option value="not-reviewed">Not Reviewed</option>
+                  <option value="not-approved">Not Approved</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+                <button className="p-1 hover:bg-gray-200 rounded" title="Sort">
+                  <ArrowUpDown size={13} className="text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            {/* Category Tree - scrollable */}
+            <div className="flex-1 overflow-y-auto">
+              {[
+                { name: 'APP', count: 7 },
+                { name: 'CRED', count: 17 },
+                { name: 'INC', count: 30 },
+                { name: 'ASSET', count: 2 },
+                { name: 'PROP', count: 20 },
+                { name: 'DISC', count: 42 },
+                { name: 'TITLE', count: 4 },
+                { name: 'ALL OTHERS', count: 17 },
+                { name: 'BOND', count: 3 },
+                { name: 'DOCS', count: 25 },
+                { name: 'POST CLSNG', count: 6 },
+                { name: 'AUDIT', count: 2 },
+                { name: 'FREEFORM DOCUMENTS', count: 9 },
+                { name: 'DUPLICATE', count: 6 },
+                { name: 'INACTIVE', count: 61 },
+              ].map((cat) => {
+                const isExpanded = finalDocsExpanded[cat.name];
+                const mockDocs = [
+                  { name: `${cat.name} Document 1`, status: 'Approved', date: '6/27/2025' },
+                  { name: `${cat.name} Document 2`, status: 'Not Reviewed', date: '6/28/2025' },
+                  { name: `${cat.name} Document 3`, status: 'Approved', date: '6/29/2025' },
+                ];
+                return (
+                  <div key={cat.name} className="border-b border-gray-100">
+                    {/* Category Row */}
+                    <div className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer select-none">
+                      <input type="checkbox" className="w-3 h-3 accent-teal-600" onClick={(e) => e.stopPropagation()} />
+                      <button
+                        className="p-0.5 hover:bg-gray-200 rounded"
+                        onClick={() => toggleFinalDocCategory(cat.name)}
+                      >
+                        {isExpanded
+                          ? <ChevronDown size={13} className="text-gray-500" />
+                          : <ChevronRight size={13} className="text-gray-500" />
+                        }
+                      </button>
+                      {isExpanded
+                        ? <FolderOpen size={14} className="text-yellow-500 flex-shrink-0" />
+                        : <Folder size={14} className="text-yellow-500 flex-shrink-0" />
+                      }
+                      <span className="text-xs font-medium text-gray-700 flex-1">{cat.name}</span>
+                      <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 text-xs rounded-full font-medium">{cat.count}</span>
+                    </div>
+
+                    {/* Expanded Doc Rows */}
+                    {isExpanded && (
+                      <div className="bg-gray-50">
+                        {mockDocs.map((doc, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-2 px-8 py-1.5 hover:bg-teal-50 cursor-pointer border-t border-gray-100"
+                            onDoubleClick={() => setDocPropertiesSlider({ ...doc, category: cat.name })}
+                            title="Double-click to view document properties"
+                          >
+                            <input type="checkbox" className="w-3 h-3 accent-teal-600" onClick={(e) => e.stopPropagation()} />
+                            <File size={12} className="text-gray-400 flex-shrink-0" />
+                            <span className="text-xs text-gray-700 flex-1 truncate">{doc.name}</span>
+                            <span className={`px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
+                              doc.status === 'Approved'
+                                ? 'bg-green-100 text-green-700'
+                                : doc.status === 'Not Reviewed'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}>
+                              {doc.status}
+                            </span>
+                            <span className="text-xs text-gray-400 flex-shrink-0">{doc.date}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Doc Properties Slider */}
+            {docPropertiesSlider && (
+              <div className="absolute right-0 top-0 h-full w-72 bg-white border-l border-gray-300 shadow-2xl z-20 flex flex-col" style={{position:'absolute'}}>
+                <div className="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-gray-800">Doc Properties</h4>
+                  <button onClick={() => setDocPropertiesSlider(null)} className="text-gray-500 hover:text-gray-700">
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-0.5">Document Name</p>
+                    <p className="text-xs font-medium text-gray-800">{docPropertiesSlider.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-0.5">Category</p>
+                    <p className="text-xs font-medium text-gray-800">{docPropertiesSlider.category}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Status</label>
+                    <select className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-teal-500">
+                      <option value="approved">Approved</option>
+                      <option value="not-reviewed">Not Reviewed</option>
+                      <option value="not-approved">Not Approved</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="px-4 py-3 border-t bg-gray-50 flex gap-2">
+                  <button
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-100 text-teal-700 rounded text-xs font-medium hover:bg-teal-200"
+                    onClick={() => alert(`Downloading ${docPropertiesSlider.name}...`)}
+                  >
+                    <Download size={13} />
+                    Download
+                  </button>
+                  <button
+                    className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-xs font-medium hover:bg-gray-300"
+                    onClick={() => setDocPropertiesSlider(null)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>{/* end outer flex wrapper */}
 
       {/* Building Bundle Modal */}
       {isBuilding && (
