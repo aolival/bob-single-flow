@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { RefreshCw, Download, CheckCircle, XCircle, Loader2, Upload, File, X, Search, ChevronDown, ChevronRight, Lock, Eye, Filter, AlertTriangle, Menu, FolderOpen, Folder, ExternalLink, ArrowUpDown } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { RefreshCw, Download, CheckCircle, XCircle, Loader2, File, X, Search, ChevronDown, ChevronRight, Lock, Eye, Filter, AlertTriangle, Menu, FolderOpen, Folder, ExternalLink, ArrowUpDown, MoreVertical, Tag, SplitSquareHorizontal } from 'lucide-react';
 import { getLoanDocumentStatus } from '../services/epsDocumentApi';
 import { getAppUrl } from '../config/appUrls';
 import DocumentTemplateSelector from './documentTemplates/DocumentTemplateSelector';
@@ -51,6 +51,9 @@ const BoBSingleFlow = () => {
   const [showDocsPanel, setShowDocsPanel] = useState(false); // Phase 3: Split-screen Stored Doc Manager
   const [finalDocsExpanded, setFinalDocsExpanded] = useState({}); // Phase 3: expanded state for Final Docs categories
   const [docPropertiesSlider, setDocPropertiesSlider] = useState(null); // Phase 3: doc clicked in Final Docs panel for slider
+  const [finalDocsSelectedDocs, setFinalDocsSelectedDocs] = useState(new Set()); // Phase 3: selected docs in Final Docs panel
+  const [splitPct, setSplitPct] = useState(50); // Phase 3: resizable split % (left panel width)
+  const isDraggingSplit = useRef(false);
 
   // Navigation Panel State (Phase 4 Initiative)
   const [isNavPanelOpen, setIsNavPanelOpen] = useState(false); // Toggle navigation panel
@@ -888,8 +891,17 @@ const BoBSingleFlow = () => {
       {/* Original Single Flow Content */}
       {currentPage === 'single-flow' && (
       <>
-      <div className={`flex h-full`}>
-        <div className={`${showDocsPanel ? 'w-[60%]' : 'max-w-7xl mx-auto w-full'} p-6 transition-all duration-300`}>
+      <div
+        className="flex h-full"
+        onMouseMove={useCallback((e) => {
+          if (!isDraggingSplit.current) return;
+          const pct = Math.min(75, Math.max(25, (e.clientX / window.innerWidth) * 100));
+          setSplitPct(pct);
+        }, [])}
+        onMouseUp={() => { isDraggingSplit.current = false; }}
+        onMouseLeave={() => { isDraggingSplit.current = false; }}
+      >
+        <div style={showDocsPanel ? { width: `${splitPct}%` } : {}} className={`${showDocsPanel ? '' : 'max-w-7xl mx-auto w-full'} p-6 transition-none overflow-y-auto`}>
         <h1 className="text-xl font-bold text-gray-800 mb-6">
           BoB (Builder of Bundles) | Single Loan Delivery
         </h1>
@@ -947,17 +959,28 @@ const BoBSingleFlow = () => {
                     </label>
                     <select
                       value={bundleName}
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const selectedBundle = e.target.value;
                         setBundleName(selectedBundle);
-                        // Auto-generate PDF bundle name when bundle is selected
                         if (selectedBundle) {
                           const mockBorrowerName = 'johndanieldoe'; // TODO: Fetch from API
                           const formattedBundleName = selectedBundle.toLowerCase().replace(/ /g, '');
                           setPdfBundleName(`${mockBorrowerName}-${subjectLoan}-${formattedBundleName}.pdf`);
                           setBorrowerName(mockBorrowerName);
+                          // Auto-generate stacking order on bundle selection (matches PROD behavior)
+                          setIsLoadingDocuments(true);
+                          try {
+                            const docs = await generateStackingOrder(subjectLoan, selectedBundle);
+                            setStackingOrder(docs);
+                            setFieldsLocked(true);
+                          } catch (err) {
+                            console.error('Failed to auto-generate stacking order:', err);
+                          } finally {
+                            setIsLoadingDocuments(false);
+                          }
                         } else {
                           setPdfBundleName('');
+                          setStackingOrder([]);
                         }
                       }}
                       disabled={fieldsLocked}
@@ -1135,9 +1158,18 @@ const BoBSingleFlow = () => {
                   >
                     Found - Approved & Ready {foundCount > 0 && <span className="ml-1">{foundCount}</span>}
                   </button>
+                  <label className="flex items-center space-x-1.5 text-xs text-gray-600 ml-1 cursor-pointer select-none" title="Hide docs marked as Not Applicable">
+                    <input
+                      type="checkbox"
+                      checked={hideNotApplicableDocs}
+                      onChange={(e) => setHideNotApplicableDocs(e.target.checked)}
+                      className="rounded accent-teal-600"
+                    />
+                    <span>Hide N/A</span>
+                  </label>
                 </div>
 
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
                   <button
                     onClick={() => setShowDocsPanel(prev => !prev)}
                     className={`flex items-center space-x-2 px-4 py-2 rounded font-medium text-xs transition-colors ${
@@ -1149,21 +1181,21 @@ const BoBSingleFlow = () => {
                     <FolderOpen size={14} />
                     <span>Stored Doc Manager</span>
                   </button>
-                  <label className="flex items-center space-x-2 text-xs text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={hideNotApplicableDocs}
-                      onChange={(e) => setHideNotApplicableDocs(e.target.checked)}
-                      className="rounded accent-teal-600"
-                    />
-                    <span>Hide Not Applicable Docs</span>
-                  </label>
                   <button
-                    onClick={() => setShowUploadModal(true)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-teal-100 text-teal-700 rounded hover:bg-teal-200 font-medium text-xs"
+                    onClick={async () => {
+                      if (subjectLoan && bundleName) {
+                        setIsLoadingDocuments(true);
+                        try {
+                          const docs = await generateStackingOrder(subjectLoan, bundleName);
+                          setStackingOrder(docs);
+                        } catch (err) { console.error(err); }
+                        finally { setIsLoadingDocuments(false); }
+                      }
+                    }}
+                    className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-teal-600 transition-colors"
+                    title="Refresh stacking order and document data"
                   >
-                    <Upload size={14} />
-                    <span>Upload Document</span>
+                    <RefreshCw size={14} />
                   </button>
                 </div>
               </div>
@@ -1236,30 +1268,40 @@ const BoBSingleFlow = () => {
                       <tr key={index} className="hover:bg-gray-50">
                         <td className="px-6 py-4">
                           {doc.status === 'Found' && doc.foundCount === 1 ? (
-                            <a
-                              href={`https://docs.clear.online/bundle-builder?loanGuid=${encodeURIComponent(subjectLoan)}&docType=${encodeURIComponent(doc.documentType)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title="Open document in new browser tab"
-                              className="text-teal-600 hover:text-teal-800 font-medium underline text-xs cursor-pointer flex items-center gap-2"
-                            >
+                            <span className="flex items-center gap-1.5">
                               {activeDocument === doc.documentType && (
                                 <Eye size={14} className="text-teal-600 flex-shrink-0" />
                               )}
-                              {doc.documentType}
-                              <ExternalLink size={12} className="text-teal-500 flex-shrink-0" />
-                            </a>
+                              <span className="font-medium text-xs text-gray-800">{doc.documentType}</span>
+                              <a
+                                href={`https://docs.clear.online/documents/${encodeURIComponent(subjectLoan)}/doc-viewer/${encodeURIComponent(doc.documentType)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Open document in new browser tab"
+                                className="p-0.5 rounded hover:bg-teal-100 text-teal-500 hover:text-teal-700 flex-shrink-0"
+                              >
+                                <ExternalLink size={12} />
+                              </a>
+                            </span>
                           ) : (
-                            <a
-                              href={`#docs-manager?type=${encodeURIComponent(doc.documentType)}&loan=${encodeURIComponent(subjectLoan)}`}
-                              onClick={(e) => handleDocumentClick(e, doc)}
-                              className="text-teal-600 hover:text-teal-800 font-medium underline text-xs cursor-pointer flex items-center gap-2"
-                            >
+                            <span className="flex items-center gap-1.5">
                               {activeDocument === doc.documentType && (
                                 <Eye size={14} className="text-teal-600 flex-shrink-0" />
                               )}
-                              {doc.documentType}
-                            </a>
+                              {showDocsPanel ? (
+                                <span className="font-medium text-xs text-gray-400 cursor-default" title="Stored Doc Manager is already open">
+                                  {doc.documentType}
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={(e) => { e.preventDefault(); setShowDocsPanel(true); }}
+                                  className="font-medium text-xs text-teal-600 hover:text-teal-800 underline cursor-pointer text-left"
+                                  title="Open Stored Doc Manager"
+                                >
+                                  {doc.documentType}
+                                </button>
+                              )}
+                            </span>
                           )}
                         </td>
                         <td className="px-6 py-4">
@@ -1300,182 +1342,326 @@ const BoBSingleFlow = () => {
         )}
         </div>{/* end left panel */}
 
-        {/* Right Panel: Final Documents in LOS */}
+        {/* Draggable Divider */}
         {showDocsPanel && (
-          <div className="w-[40%] sticky top-0 h-screen border-l border-gray-200 bg-white flex flex-col overflow-hidden z-10 relative">
-            {/* Panel Header */}
-            <div className="px-4 py-3 border-b bg-gray-50 flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowDocsPanel(false)}
-                  className="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-medium hover:bg-teal-700"
-                >
-                  Stored Doc Manager
-                </button>
-                <span className="text-sm font-semibold text-gray-800">Final Documents in LOS</span>
-              </div>
-              <button
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-50"
-                title="Sync with LOS"
-              >
-                <RefreshCw size={13} />
-                LOS Document Sync
-              </button>
-            </div>
-
-            {/* Controls Bar */}
-            <div className="px-4 py-2 border-b bg-gray-50 flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <button className="text-xs text-teal-600 hover:text-teal-800 font-medium">Select All</button>
-                <span className="text-gray-300">|</span>
-                <button
-                  className="text-xs text-teal-600 hover:text-teal-800 font-medium"
-                  onClick={() => setFinalDocsExpanded({})}
-                >
-                  Expand All
-                </button>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-600">Filter by:</span>
-                <select className="px-2 py-1 border border-gray-300 rounded text-xs bg-white">
-                  <option value="">Select...</option>
-                  <option value="approved">Approved</option>
-                  <option value="not-reviewed">Not Reviewed</option>
-                  <option value="not-approved">Not Approved</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-                <button className="p-1 hover:bg-gray-200 rounded" title="Sort">
-                  <ArrowUpDown size={13} className="text-gray-500" />
-                </button>
-              </div>
-            </div>
-
-            {/* Category Tree - scrollable */}
-            <div className="flex-1 overflow-y-auto">
-              {[
-                { name: 'APP', count: 7 },
-                { name: 'CRED', count: 17 },
-                { name: 'INC', count: 30 },
-                { name: 'ASSET', count: 2 },
-                { name: 'PROP', count: 20 },
-                { name: 'DISC', count: 42 },
-                { name: 'TITLE', count: 4 },
-                { name: 'ALL OTHERS', count: 17 },
-                { name: 'BOND', count: 3 },
-                { name: 'DOCS', count: 25 },
-                { name: 'POST CLSNG', count: 6 },
-                { name: 'AUDIT', count: 2 },
-                { name: 'FREEFORM DOCUMENTS', count: 9 },
-                { name: 'DUPLICATE', count: 6 },
-                { name: 'INACTIVE', count: 61 },
-              ].map((cat) => {
-                const isExpanded = finalDocsExpanded[cat.name];
-                const mockDocs = [
-                  { name: `${cat.name} Document 1`, status: 'Approved', date: '6/27/2025' },
-                  { name: `${cat.name} Document 2`, status: 'Not Reviewed', date: '6/28/2025' },
-                  { name: `${cat.name} Document 3`, status: 'Approved', date: '6/29/2025' },
-                ];
-                return (
-                  <div key={cat.name} className="border-b border-gray-100">
-                    {/* Category Row */}
-                    <div className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer select-none">
-                      <input type="checkbox" className="w-3 h-3 accent-teal-600" onClick={(e) => e.stopPropagation()} />
-                      <button
-                        className="p-0.5 hover:bg-gray-200 rounded"
-                        onClick={() => toggleFinalDocCategory(cat.name)}
-                      >
-                        {isExpanded
-                          ? <ChevronDown size={13} className="text-gray-500" />
-                          : <ChevronRight size={13} className="text-gray-500" />
-                        }
-                      </button>
-                      {isExpanded
-                        ? <FolderOpen size={14} className="text-yellow-500 flex-shrink-0" />
-                        : <Folder size={14} className="text-yellow-500 flex-shrink-0" />
-                      }
-                      <span className="text-xs font-medium text-gray-700 flex-1">{cat.name}</span>
-                      <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 text-xs rounded-full font-medium">{cat.count}</span>
-                    </div>
-
-                    {/* Expanded Doc Rows */}
-                    {isExpanded && (
-                      <div className="bg-gray-50">
-                        {mockDocs.map((doc, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-2 px-8 py-1.5 hover:bg-teal-50 cursor-pointer border-t border-gray-100"
-                            onDoubleClick={() => setDocPropertiesSlider({ ...doc, category: cat.name })}
-                            title="Double-click to view document properties"
-                          >
-                            <input type="checkbox" className="w-3 h-3 accent-teal-600" onClick={(e) => e.stopPropagation()} />
-                            <File size={12} className="text-gray-400 flex-shrink-0" />
-                            <span className="text-xs text-gray-700 flex-1 truncate">{doc.name}</span>
-                            <span className={`px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
-                              doc.status === 'Approved'
-                                ? 'bg-green-100 text-green-700'
-                                : doc.status === 'Not Reviewed'
-                                ? 'bg-yellow-100 text-yellow-700'
-                                : 'bg-gray-100 text-gray-600'
-                            }`}>
-                              {doc.status}
-                            </span>
-                            <span className="text-xs text-gray-400 flex-shrink-0">{doc.date}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Doc Properties Slider */}
-            {docPropertiesSlider && (
-              <div className="absolute right-0 top-0 h-full w-72 bg-white border-l border-gray-300 shadow-2xl z-20 flex flex-col" style={{position:'absolute'}}>
-                <div className="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
-                  <h4 className="text-sm font-semibold text-gray-800">Doc Properties</h4>
-                  <button onClick={() => setDocPropertiesSlider(null)} className="text-gray-500 hover:text-gray-700">
-                    <X size={16} />
-                  </button>
-                </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-0.5">Document Name</p>
-                    <p className="text-xs font-medium text-gray-800">{docPropertiesSlider.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-0.5">Category</p>
-                    <p className="text-xs font-medium text-gray-800">{docPropertiesSlider.category}</p>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Status</label>
-                    <select className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-teal-500">
-                      <option value="approved">Approved</option>
-                      <option value="not-reviewed">Not Reviewed</option>
-                      <option value="not-approved">Not Approved</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="px-4 py-3 border-t bg-gray-50 flex gap-2">
-                  <button
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-100 text-teal-700 rounded text-xs font-medium hover:bg-teal-200"
-                    onClick={() => alert(`Downloading ${docPropertiesSlider.name}...`)}
-                  >
-                    <Download size={13} />
-                    Download
-                  </button>
-                  <button
-                    className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-xs font-medium hover:bg-gray-300"
-                    onClick={() => setDocPropertiesSlider(null)}
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            )}
+          <div
+            className="w-1.5 flex-shrink-0 bg-gray-200 hover:bg-teal-400 cursor-col-resize active:bg-teal-500 transition-colors z-20 flex items-center justify-center"
+            onMouseDown={(e) => { e.preventDefault(); isDraggingSplit.current = true; }}
+            title="Drag to resize"
+          >
+            <div className="w-0.5 h-8 bg-gray-400 rounded-full" />
           </div>
         )}
+
+        {/* Right Panel: Final Documents in LOS */}
+        {showDocsPanel && (() => {
+          const FINAL_DOCS_CATEGORIES = [
+            { name: 'APP', count: 7, docs: [
+              { id: 'app-1', type: 'Loan Application', filename: '20251118194221_Loan_Application_Ryan_Lively', date: '11/18/25, 11:42 AM', createdBy: 'Borrower 1003', source: '', status: 'Approved' },
+              { id: 'app-2', type: 'Loan Application', filename: 'Ryan_Lively_20251118194221_XMLApplication', date: '11/18/25, 11:42 AM', createdBy: 'Borrower 1003', source: '', status: 'Approved' },
+              { id: 'app-3', type: 'Loan Application', filename: '1003 Uniform Residential Loan Application - 1-2021 (Ryan Lively)', date: '1/12/26, 12:56 PM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Approved' },
+              { id: 'app-4', type: 'Supplemental Consumer Information Form', filename: '1103 Supplemental Consumer Information Form (Ryan Lively)', date: '1/12/26, 12:56 PM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Approved' },
+              { id: 'app-5', type: 'Personal Identification', filename: 'Driver License', date: '1/14/26, 6:27 AM', createdBy: 'Shannon Lang', source: '', status: 'Approved' },
+              { id: 'app-6', type: '1008 Transmittal Summary', filename: '1008 Transmittal Summary', date: '2/20/26, 2:48 PM', createdBy: 'KylieGrossman', source: 'Imported from LOS', status: 'Approved' },
+              { id: 'app-7', type: 'Final 1003', filename: 'Final 1003', date: '2/27/26, 7:48 AM', createdBy: 'MindyWebb', source: 'Imported from LOS', status: 'Approved' },
+            ]},
+            { name: 'CRED', count: 17, docs: [
+              { id: 'cred-1', type: 'Other Property Owned PITI Documentation', filename: 'HOA - no HOA dues on any home', date: '1/14/26, 6:28 AM', createdBy: 'Shannon Lang', source: '', status: 'Approved' },
+              { id: 'cred-2', type: 'Mortgage Statement', filename: '5105 N 32nd Pl- Tru West- Due 12/31', date: '1/14/26, 6:28 AM', createdBy: 'Shannon Lang', source: '', status: 'Approved' },
+              { id: 'cred-3', type: 'Mortgage Statement', filename: '4602 N 74th Pl- Due 12/1', date: '1/14/26, 6:29 AM', createdBy: 'Shannon Lang', source: '', status: 'Approved' },
+              { id: 'cred-4', type: 'Credit Report', filename: 'Tri-Merge Credit Report', date: '1/14/26, 7:00 AM', createdBy: 'Shannon Lang', source: '', status: 'Approved' },
+              { id: 'cred-5', type: 'Credit Explanation Letter', filename: 'Credit Explanation - Collections', date: '1/15/26, 9:12 AM', createdBy: 'MindyWebb', source: '', status: 'Approved' },
+              { id: 'cred-6', type: 'Liability Documentation', filename: 'Auto Loan Statement', date: '1/15/26, 9:15 AM', createdBy: 'MindyWebb', source: '', status: 'Approved' },
+            ]},
+            { name: 'INC', count: 30, docs: [
+              { id: 'inc-1', type: 'W-2', filename: 'W2_2024_Ryan_Lively', date: '1/14/26, 8:00 AM', createdBy: 'Shannon Lang', source: '', status: 'Approved' },
+              { id: 'inc-2', type: 'Pay Stubs', filename: 'PayStubs_Dec2025_Jan2026', date: '1/14/26, 8:05 AM', createdBy: 'Shannon Lang', source: '', status: 'Approved' },
+              { id: 'inc-3', type: 'Tax Returns', filename: '2024_Federal_Tax_Return', date: '1/14/26, 8:10 AM', createdBy: 'Shannon Lang', source: 'Imported from LOS', status: 'Approved' },
+            ]},
+            { name: 'ASSET', count: 2, docs: [
+              { id: 'asset-1', type: 'Bank Statement', filename: 'Chase_Bank_Statement_Dec2025', date: '1/14/26, 8:20 AM', createdBy: 'Shannon Lang', source: '', status: 'Approved' },
+              { id: 'asset-2', type: 'Investment Account', filename: 'Fidelity_Investment_Statement', date: '1/14/26, 8:22 AM', createdBy: 'Shannon Lang', source: '', status: 'Approved' },
+            ]},
+            { name: 'PROP', count: 20, docs: [
+              { id: 'prop-1', type: 'Appraisal', filename: 'Full_Appraisal_Report_2026', date: '1/20/26, 10:00 AM', createdBy: 'KylieGrossman', source: 'Imported from LOS', status: 'Approved' },
+              { id: 'prop-2', type: 'Purchase Contract', filename: 'Fully_Executed_Purchase_Contract', date: '1/12/26, 2:00 PM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Approved' },
+              { id: 'prop-3', type: 'Title Commitment', filename: 'Title_Commitment_Prelim', date: '1/18/26, 11:30 AM', createdBy: 'MindyWebb', source: '', status: 'Approved' },
+            ]},
+            { name: 'DISC', count: 42, docs: [
+              { id: 'disc-1', type: 'Closing Disclosure', filename: 'Final_CD_Signed', date: '2/25/26, 3:00 PM', createdBy: 'KylieGrossman', source: 'Imported from LOS', status: 'Approved' },
+              { id: 'disc-2', type: 'Initial Closing Disclosure', filename: 'Initial_CD_Ryan_Lively', date: '2/10/26, 9:00 AM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Approved' },
+              { id: 'disc-3', type: 'Loan Estimate', filename: 'LE_Initial_Disclosure', date: '1/12/26, 1:00 PM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Approved' },
+            ]},
+            { name: 'TITLE', count: 4, docs: [
+              { id: 'title-1', type: 'Title Policy', filename: 'Owners_Title_Policy', date: '2/28/26, 8:00 AM', createdBy: 'MindyWebb', source: 'Imported from LOS', status: 'Approved' },
+              { id: 'title-2', type: 'CPL', filename: 'Closing_Protection_Letter', date: '2/28/26, 8:05 AM', createdBy: 'MindyWebb', source: '', status: 'Approved' },
+            ]},
+            { name: 'ALL OTHERS', count: 17, docs: [
+              { id: 'other-1', type: 'Miscellaneous', filename: 'HOI_Declarations_Page', date: '1/14/26, 7:00 AM', createdBy: 'Shannon Lang', source: '', status: 'Approved' },
+              { id: 'other-2', type: 'Flood Certification', filename: 'FEMA_Flood_Cert', date: '1/14/26, 7:05 AM', createdBy: 'Shannon Lang', source: 'Imported from LOS', status: 'Approved' },
+            ]},
+            { name: 'BOND', count: 3, docs: [
+              { id: 'bond-1', type: 'Bond Reservation', filename: 'Bond_Reservation_Confirmation', date: '1/15/26, 10:00 AM', createdBy: 'KylieGrossman', source: 'Imported from LOS', status: 'Approved' },
+              { id: 'bond-2', type: 'Bond Commitment', filename: 'Bond_Commitment_Letter', date: '1/15/26, 10:05 AM', createdBy: 'KylieGrossman', source: '', status: 'Approved' },
+            ]},
+            { name: 'DOCS', count: 25, docs: [
+              { id: 'docs-1', type: 'Note', filename: 'Promissory_Note_Signed', date: '2/28/26, 9:00 AM', createdBy: 'MindyWebb', source: 'Imported from LOS', status: 'Approved' },
+              { id: 'docs-2', type: 'Deed of Trust', filename: 'Deed_of_Trust_Recorded', date: '2/28/26, 9:05 AM', createdBy: 'MindyWebb', source: 'Imported from LOS', status: 'Approved' },
+              { id: 'docs-3', type: 'Right of Rescission', filename: 'Right_of_Rescission_Signed', date: '2/28/26, 9:10 AM', createdBy: 'MindyWebb', source: 'Imported from LOS', status: 'Approved' },
+            ]},
+            { name: 'POST CLSNG', count: 6, docs: [
+              { id: 'postclsng-1', type: 'Post-Closing Checklist', filename: 'Post_Closing_Checklist_Complete', date: '3/5/26, 8:00 AM', createdBy: 'KylieGrossman', source: '', status: 'Approved' },
+              { id: 'postclsng-2', type: 'Recorded Deed', filename: 'Recorded_Deed_of_Trust', date: '3/10/26, 2:00 PM', createdBy: 'KylieGrossman', source: 'Imported from LOS', status: 'Approved' },
+            ]},
+            { name: 'AUDIT', count: 2, docs: [
+              { id: 'audit-1', type: 'QC Audit Report', filename: 'QC_Audit_Final_Report', date: '3/15/26, 9:00 AM', createdBy: 'MindyWebb', source: 'Imported from LOS', status: 'Approved' },
+            ]},
+            { name: 'FREEFORM DOCUMENTS', count: 9, docs: [
+              { id: 'ff-1', type: 'Freeform Note', filename: 'Processor_Notes_Jan2026', date: '1/16/26, 11:00 AM', createdBy: 'Shannon Lang', source: '', status: 'Approved' },
+              { id: 'ff-2', type: 'Freeform Attachment', filename: 'Underwriter_Conditions_Response', date: '2/1/26, 3:30 PM', createdBy: 'KylieGrossman', source: '', status: 'Approved' },
+            ]},
+            { name: 'DUPLICATE', count: 6, docs: [
+              { id: 'dup-1', type: 'Loan Application', filename: '1003_DUPLICATE_old_version', date: '1/10/26, 5:00 PM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Duplicate' },
+              { id: 'dup-2', type: 'Credit Report', filename: 'Credit_Report_DUPLICATE', date: '1/11/26, 6:00 AM', createdBy: 'Shannon Lang', source: '', status: 'Duplicate' },
+            ]},
+            { name: 'INACTIVE', count: 61, docs: [
+              { id: 'inact-1', type: 'Old Appraisal', filename: 'Appraisal_2024_Expired', date: '6/15/25, 9:00 AM', createdBy: 'KylieGrossman', source: 'Imported from LOS', status: 'Inactive' },
+              { id: 'inact-2', type: 'Prior Credit Report', filename: 'Credit_Report_June2025', date: '6/20/25, 10:00 AM', createdBy: 'Shannon Lang', source: '', status: 'Inactive' },
+              { id: 'inact-3', type: 'Superseded LE', filename: 'LE_Version1_Superseded', date: '1/13/26, 4:00 PM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Inactive' },
+            ]},
+          ];
+
+          const allDocIds = FINAL_DOCS_CATEGORIES.flatMap(cat => cat.docs.map(d => d.id));
+          const finalDocsSelectedCount = finalDocsSelectedDocs.size;
+          const allSelected = allDocIds.length > 0 && allDocIds.every(id => finalDocsSelectedDocs.has(id));
+          const allExpanded = FINAL_DOCS_CATEGORIES.every(cat => finalDocsExpanded[cat.name]);
+
+          const toggleFinalDocSelection = (docId) => {
+            setFinalDocsSelectedDocs(prev => {
+              const next = new Set(prev);
+              next.has(docId) ? next.delete(docId) : next.add(docId);
+              return next;
+            });
+          };
+          const clearFinalDocsSelection = () => setFinalDocsSelectedDocs(new Set());
+          const selectAllDocs = () => setFinalDocsSelectedDocs(new Set(allDocIds));
+          const expandAllCategories = () => {
+            const obj = {};
+            FINAL_DOCS_CATEGORIES.forEach(cat => { obj[cat.name] = true; });
+            setFinalDocsExpanded(obj);
+          };
+          const collapseAllCategories = () => setFinalDocsExpanded({});
+          const toggleCategorySelection = (catDocs) => {
+            const ids = catDocs.map(d => d.id);
+            const allSel = ids.every(id => finalDocsSelectedDocs.has(id));
+            setFinalDocsSelectedDocs(prev => {
+              const next = new Set(prev);
+              allSel ? ids.forEach(id => next.delete(id)) : ids.forEach(id => next.add(id));
+              return next;
+            });
+          };
+          const statusColor = (s) => {
+            if (s === 'Approved') return 'text-green-600';
+            if (s === 'Duplicate') return 'text-orange-500';
+            if (s === 'Inactive') return 'text-gray-400';
+            if (s === 'Not Reviewed') return 'text-yellow-600';
+            return 'text-gray-600';
+          };
+
+          return (
+            <div style={{ width: `${100 - splitPct}%` }} className="sticky top-0 h-screen border-l border-gray-200 bg-white flex flex-col overflow-hidden z-10 relative flex-shrink-0">
+
+              {/* Header */}
+              <div className="px-3 py-2 border-b bg-white flex items-center justify-between flex-shrink-0">
+                <button
+                  onClick={() => setShowDocsPanel(false)}
+                  className="shadow-sm border border-gray-300 bg-white px-3 py-1.5 rounded text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                >
+                  Stored Document Manager
+                </button>
+                <button className="flex items-center gap-1.5 px-2 py-1.5 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-50 shadow-sm">
+                  <RefreshCw size={12} />
+                  <span className="hidden xl:inline">LOS Document Sync</span>
+                </button>
+              </div>
+
+              {/* Controls Bar */}
+              <div className="px-3 py-1.5 border-b bg-gray-50 flex items-center justify-between flex-shrink-0 gap-2">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={allSelected ? clearFinalDocsSelection : selectAllDocs}
+                    className="text-xs text-teal-600 hover:text-teal-800 hover:underline font-medium"
+                  >
+                    {allSelected ? 'Deselect All' : 'Select All'}
+                  </button>
+                  <span className="text-gray-300 text-xs">|</span>
+                  <button
+                    onClick={allExpanded ? collapseAllCategories : expandAllCategories}
+                    className="text-xs text-teal-600 hover:text-teal-800 hover:underline font-medium"
+                  >
+                    {allExpanded ? 'Collapse All' : 'Expand All'}
+                  </button>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <select className="text-xs border border-gray-200 rounded px-1.5 py-0.5 bg-white text-gray-600 focus:outline-none focus:ring-1 focus:ring-teal-400">
+                    <option value="">Filter by Status</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Not Reviewed">Not Reviewed</option>
+                    <option value="Not Approved">Not Approved</option>
+                    <option value="Duplicate">Duplicate</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                  <select className="text-xs border border-gray-200 rounded px-1.5 py-0.5 bg-white text-gray-600 focus:outline-none focus:ring-1 focus:ring-teal-400">
+                    <option value="date-desc">Newest First</option>
+                    <option value="date-asc">Oldest First</option>
+                    <option value="type-asc">Type A–Z</option>
+                    <option value="type-desc">Type Z–A</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Selection Action Bar */}
+              {finalDocsSelectedCount > 0 && (
+                <div className="px-3 py-1.5 border-b bg-white flex items-center justify-between flex-shrink-0 gap-2">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button onClick={clearFinalDocsSelection} className="p-0.5 hover:bg-gray-100 rounded text-gray-500"><X size={13} /></button>
+                    <span className="text-xs text-gray-600 font-medium whitespace-nowrap">{finalDocsSelectedCount} file(s) selected</span>
+                  </div>
+                  <div className="flex items-center gap-0.5 flex-wrap">
+                    <button className="flex items-center gap-0.5 px-1.5 py-1 hover:bg-gray-100 rounded text-xs text-gray-600 font-medium whitespace-nowrap">
+                      <SplitSquareHorizontal size={11} /><span className="hidden sm:inline">Split</span>
+                    </button>
+                    <button className="flex items-center gap-0.5 px-1.5 py-1 bg-teal-600 text-white rounded text-xs font-medium hover:bg-teal-700 whitespace-nowrap">
+                      <RefreshCw size={10} />Change Status<ChevronDown size={10} />
+                    </button>
+                    <button className="flex items-center gap-0.5 px-1.5 py-1 hover:bg-gray-100 rounded text-xs text-gray-600 font-medium whitespace-nowrap">
+                      <Tag size={11} /><span className="hidden sm:inline">Tag</span><ChevronDown size={10} />
+                    </button>
+                    <button className="flex items-center gap-0.5 px-1.5 py-1 hover:bg-gray-100 rounded text-xs text-gray-600 font-medium whitespace-nowrap">
+                      <Download size={11} /><span className="hidden sm:inline">Download</span>
+                    </button>
+                    <button className="p-1 hover:bg-gray-100 rounded text-gray-500"><MoreVertical size={12} /></button>
+                  </div>
+                </div>
+              )}
+
+              {/* Category Tree */}
+              <div className="flex-1 overflow-y-auto">
+                {FINAL_DOCS_CATEGORIES.map((cat) => {
+                  const isExpanded = !!finalDocsExpanded[cat.name];
+                  const catIds = cat.docs.map(d => d.id);
+                  const selCount = catIds.filter(id => finalDocsSelectedDocs.has(id)).length;
+                  const allSel = catIds.length > 0 && selCount === catIds.length;
+                  const someSel = selCount > 0 && selCount < catIds.length;
+                  return (
+                    <div key={cat.name} className="border-b border-gray-100">
+                      <div
+                        className="flex items-center gap-1.5 px-2 py-1.5 hover:bg-gray-50 cursor-pointer select-none"
+                        onClick={() => toggleFinalDocCategory(cat.name)}
+                      >
+                        {isExpanded ? <ChevronDown size={13} className="text-gray-500 flex-shrink-0" /> : <ChevronRight size={13} className="text-gray-500 flex-shrink-0" />}
+                        <input
+                          type="checkbox"
+                          className="w-3 h-3 accent-teal-600 flex-shrink-0"
+                          checked={allSel}
+                          ref={el => { if (el) el.indeterminate = someSel; }}
+                          onChange={() => toggleCategorySelection(cat.docs)}
+                          onClick={e => e.stopPropagation()}
+                        />
+                        {isExpanded ? <FolderOpen size={14} className="text-yellow-500 flex-shrink-0" /> : <Folder size={14} className="text-yellow-500 flex-shrink-0" />}
+                        <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">{cat.name} ({cat.count})</span>
+                      </div>
+
+                      {isExpanded && (
+                        <div>
+                          {cat.docs.map((doc) => {
+                            const isChecked = finalDocsSelectedDocs.has(doc.id);
+                            return (
+                              <div
+                                key={doc.id}
+                                className={`group flex items-start gap-2 px-5 py-1.5 border-t border-gray-100 cursor-pointer ${isChecked ? 'bg-teal-50' : 'hover:bg-gray-50'}`}
+                                onDoubleClick={() => setDocPropertiesSlider({ ...doc, category: cat.name })}
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="w-3 h-3 accent-teal-600 flex-shrink-0 mt-1"
+                                  checked={isChecked}
+                                  onChange={() => toggleFinalDocSelection(doc.id)}
+                                  onClick={e => e.stopPropagation()}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-1">
+                                    <span className="text-xs font-semibold text-gray-700 leading-snug">
+                                      {doc.type}
+                                      <span className="font-normal text-gray-400 ml-1 break-all">({doc.filename})</span>
+                                    </span>
+                                    <div className={`flex items-center gap-0.5 flex-shrink-0 mt-0.5 ${isChecked ? 'flex' : 'hidden group-hover:flex'}`}>
+                                      <select
+                                        className={`text-xs font-medium bg-transparent cursor-pointer hover:bg-gray-100 rounded px-0.5 border-0 outline-none ${statusColor(doc.status)}`}
+                                        defaultValue={doc.status}
+                                        onClick={e => e.stopPropagation()}
+                                      >
+                                        <option>Approved</option>
+                                        <option>Not Reviewed</option>
+                                        <option>Not Approved</option>
+                                        <option>Duplicate</option>
+                                        <option>Inactive</option>
+                                      </select>
+                                      <button className="p-0.5 text-gray-400 hover:text-gray-700 rounded" onClick={e => e.stopPropagation()} title="Preview"><Eye size={12} /></button>
+                                      <button className="p-0.5 text-gray-400 hover:text-gray-700 rounded" onClick={e => e.stopPropagation()} title="Download"><Download size={12} /></button>
+                                      <button className="p-0.5 text-gray-400 hover:text-gray-700 rounded" onClick={e => e.stopPropagation()} title="More"><MoreVertical size={12} /></button>
+                                    </div>
+                                    {!isChecked && (
+                                      <span className={`text-xs font-medium flex-shrink-0 mt-0.5 group-hover:hidden ${statusColor(doc.status)}`}>{doc.status}</span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-400 mt-0.5 leading-snug">
+                                    Created {doc.date} - created by: {doc.createdBy}{doc.source ? ` - ${doc.source}` : ''}
+                                  </p>
+                                  <Lock size={10} className="text-gray-300 mt-0.5" />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Doc Properties Slider */}
+              {docPropertiesSlider && (
+                <div className="absolute right-0 top-0 h-full w-72 bg-white border-l border-gray-300 shadow-2xl z-20 flex flex-col">
+                  <div className="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-gray-800">Doc Properties</h4>
+                    <button onClick={() => setDocPropertiesSlider(null)} className="text-gray-500 hover:text-gray-700"><X size={16} /></button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    <div><p className="text-xs text-gray-500 mb-0.5">Document Type</p><p className="text-xs font-medium text-gray-800">{docPropertiesSlider.type}</p></div>
+                    <div><p className="text-xs text-gray-500 mb-0.5">Filename</p><p className="text-xs font-medium text-gray-800 break-words">{docPropertiesSlider.filename}</p></div>
+                    <div><p className="text-xs text-gray-500 mb-0.5">Category</p><p className="text-xs font-medium text-gray-800">{docPropertiesSlider.category}</p></div>
+                    <div><p className="text-xs text-gray-500 mb-0.5">Created</p><p className="text-xs font-medium text-gray-800">{docPropertiesSlider.date}</p></div>
+                    <div><p className="text-xs text-gray-500 mb-0.5">Created By</p><p className="text-xs font-medium text-gray-800">{docPropertiesSlider.createdBy}</p></div>
+                    {docPropertiesSlider.source && <div><p className="text-xs text-gray-500 mb-0.5">Source</p><p className="text-xs font-medium text-gray-800">{docPropertiesSlider.source}</p></div>}
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Status</label>
+                      <select className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-teal-500" defaultValue={docPropertiesSlider.status}>
+                        <option>Approved</option><option>Not Reviewed</option><option>Not Approved</option><option>Duplicate</option><option>Inactive</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="px-4 py-3 border-t bg-gray-50 flex gap-2">
+                    <button className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-100 text-teal-700 rounded text-xs font-medium hover:bg-teal-200" onClick={() => alert(`Downloading ${docPropertiesSlider.filename}...`)}>
+                      <Download size={13} />Download
+                    </button>
+                    <button className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-xs font-medium hover:bg-gray-300" onClick={() => setDocPropertiesSlider(null)}>Close</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>{/* end outer flex wrapper */}
 
       {/* Building Bundle Modal */}
@@ -1595,82 +1781,6 @@ const BoBSingleFlow = () => {
         </div>
       )}
 
-      {/* Upload Document Modal */}
-      {showUploadModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-[500px]">
-            <h3 className="text-base font-semibold mb-4">Upload Supplemental Document</h3>
-            <p className="text-xs text-gray-600 mb-4">Upload additional documents to supplement the bundle (PDF only)</p>
-
-            <div className="mb-4">
-              <label className="block text-xs font-medium text-gray-700 mb-2">Select PDF File</label>
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={handleFileUpload}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-xs"
-              />
-              {selectedFile && (
-                <div className="mt-2 p-2 bg-teal-50 border border-teal-200 rounded flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <File size={16} className="text-teal-600" />
-                    <span className="text-xs text-teal-800">{selectedFile.name}</span>
-                  </div>
-                  <button
-                    onClick={() => setSelectedFile(null)}
-                    className="text-teal-600 hover:text-teal-800"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {uploadedFiles.length > 0 && (
-              <div className="mb-4">
-                <p className="text-xs font-medium text-gray-700 mb-2">Uploaded Files:</p>
-                <div className="space-y-2">
-                  {uploadedFiles.map(file => (
-                    <div key={file.id} className="p-2 bg-gray-50 border border-gray-200 rounded flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <File size={16} className="text-gray-600" />
-                        <div>
-                          <p className="text-xs text-gray-800">{file.name}</p>
-                          <p className="text-xs text-gray-500">{file.size} - {file.uploadDate}</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveFile(file.id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="flex space-x-3">
-              <button
-                onClick={() => {
-                  setShowUploadModal(false);
-                  setSelectedFile(null);
-                }}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 font-medium text-xs"
-              >
-                Close
-              </button>
-              <button
-                onClick={handleUploadSubmit}
-                className="flex-1 px-4 py-2 bg-teal-700 text-white rounded hover:bg-teal-800 font-medium text-xs"
-              >
-                Upload File
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Document Storage Modal */}
       {showDocStorageModal && (
