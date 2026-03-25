@@ -8,7 +8,7 @@ const isDevelopment =
 
 const APP_URLS = {
   development: {
-    'bulk-bundle': 'http://localhost:5176',
+    'bulk-bundle': 'http://localhost:5173',
     'single-flow': 'http://localhost:5174',
     'doctor-bob': 'http://localhost:5175',
     'doctor-bob-bulk': 'http://localhost:5180',
