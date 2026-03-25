@@ -1385,8 +1385,9 @@ const BoBSingleFlow = () => {
 
         {/* Right Panel: Final Documents in LOS */}
         {showDocsPanel && (() => {
+          // Categories: 20 PROD DocumentCategoryIDs sorted A–Z, Unassigned pinned last (no valid DocTypeID)
           const FINAL_DOCS_CATEGORIES = [
-            { name: 'APP', count: 7, docs: [
+            { name: 'APP', categoryId: 1000001, count: 7, docs: [
               { id: 'app-1', type: 'Loan Application', filename: '20251118194221_Loan_Application_Ryan_Lively', date: '11/18/25, 11:42 AM', createdBy: 'Borrower 1003', source: '', status: 'Approved' },
               { id: 'app-2', type: 'Loan Application', filename: 'Ryan_Lively_20251118194221_XMLApplication', date: '11/18/25, 11:42 AM', createdBy: 'Borrower 1003', source: '', status: 'Approved' },
               { id: 'app-3', type: 'Loan Application', filename: '1003 Uniform Residential Loan Application - 1-2021 (Ryan Lively)', date: '1/12/26, 12:56 PM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Approved' },
@@ -1395,18 +1396,23 @@ const BoBSingleFlow = () => {
               { id: 'app-6', type: '1008 Transmittal Summary', filename: '1008 Transmittal Summary', date: '2/20/26, 2:48 PM', createdBy: 'KylieGrossman', source: 'Imported from LOS', status: 'Approved' },
               { id: 'app-7', type: 'Final 1003', filename: 'Final 1003', date: '2/27/26, 7:48 AM', createdBy: 'MindyWebb', source: 'Imported from LOS', status: 'Not Reviewed' },
             ]},
-            { name: 'ASSET', count: 2, docs: [
+            { name: 'ASSET', categoryId: 1000005, count: 2, docs: [
               { id: 'asset-1', type: 'Bank Statement', filename: 'Chase_Bank_Statement_Dec2025', date: '1/14/26, 8:20 AM', createdBy: 'Shannon Lang', source: '', status: 'Approved' },
               { id: 'asset-2', type: 'Investment Account', filename: 'Fidelity_Investment_Statement', date: '1/14/26, 8:22 AM', createdBy: 'Shannon Lang', source: '', status: 'Not Reviewed' },
             ]},
-            { name: 'AUDIT', count: 2, docs: [
+            { name: 'AUDIT', categoryId: 1000011, count: 2, docs: [
               { id: 'audit-1', type: 'QC Audit Report', filename: 'QC_Audit_Final_Report', date: '3/15/26, 9:00 AM', createdBy: 'MindyWebb', source: 'Imported from LOS', status: 'Approved' },
             ]},
-            { name: 'BOND', count: 3, docs: [
+            { name: 'BOND SUB FIN', categoryId: 1000016, count: 3, docs: [
               { id: 'bond-1', type: 'Bond Reservation', filename: 'Bond_Reservation_Confirmation', date: '1/15/26, 10:00 AM', createdBy: 'KylieGrossman', source: 'Imported from LOS', status: 'Approved' },
               { id: 'bond-2', type: 'Bond Commitment', filename: 'Bond_Commitment_Letter', date: '1/15/26, 10:05 AM', createdBy: 'KylieGrossman', source: '', status: 'Reviewed' },
             ]},
-            { name: 'CRED', count: 17, docs: [
+            { name: 'CONST', categoryId: 1000020, count: 0, docs: [] },
+            { name: 'CORR', categoryId: 1000012, count: 3, docs: [
+              { id: 'corr-1', type: 'Commitment Letter', filename: 'Commitment_Letter_Ryan_Lively', date: '1/20/26, 3:00 PM', createdBy: 'KylieGrossman', source: 'Imported from LOS', status: 'Approved' },
+              { id: 'corr-2', type: 'Borrower Correspondence', filename: 'Conditions_Satisfaction_Letter', date: '2/15/26, 10:00 AM', createdBy: 'MindyWebb', source: '', status: 'Not Reviewed' },
+            ]},
+            { name: 'CRED', categoryId: 1000003, count: 17, docs: [
               { id: 'cred-1', type: 'Other Property Owned PITI Documentation', filename: 'HOA - no HOA dues on any home', date: '1/14/26, 6:28 AM', createdBy: 'Shannon Lang', source: '', status: 'Approved' },
               { id: 'cred-2', type: 'Mortgage Statement', filename: '5105 N 32nd Pl- Tru West- Due 12/31', date: '1/14/26, 6:28 AM', createdBy: 'Shannon Lang', source: '', status: 'Approved' },
               { id: 'cred-3', type: 'Mortgage Statement', filename: '4602 N 74th Pl- Due 12/1', date: '1/14/26, 6:29 AM', createdBy: 'Shannon Lang', source: '', status: 'Reviewed' },
@@ -1414,37 +1420,64 @@ const BoBSingleFlow = () => {
               { id: 'cred-5', type: 'Credit Explanation Letter', filename: 'Credit Explanation - Collections', date: '1/15/26, 9:12 AM', createdBy: 'MindyWebb', source: '', status: 'Incomplete' },
               { id: 'cred-6', type: 'Liability Documentation', filename: 'Auto Loan Statement', date: '1/15/26, 9:15 AM', createdBy: 'MindyWebb', source: '', status: 'Not Reviewed' },
             ]},
-            { name: 'DISC', count: 42, docs: [
+            { name: 'DISC', categoryId: 1000002, count: 42, docs: [
               { id: 'disc-1', type: 'Closing Disclosure', filename: 'Final_CD_Signed', date: '2/25/26, 3:00 PM', createdBy: 'KylieGrossman', source: 'Imported from LOS', status: 'Ready to Ship' },
               { id: 'disc-2', type: 'Initial Closing Disclosure', filename: 'Initial_CD_Ryan_Lively', date: '2/10/26, 9:00 AM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Approved' },
               { id: 'disc-3', type: 'Loan Estimate', filename: 'LE_Initial_Disclosure', date: '1/12/26, 1:00 PM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Approved' },
             ]},
-            { name: 'DOCS', count: 25, docs: [
+            { name: 'DOCS', categoryId: 1000007, count: 25, docs: [
               { id: 'docs-1', type: 'Note', filename: 'Promissory_Note_Signed', date: '2/28/26, 9:00 AM', createdBy: 'MindyWebb', source: 'Imported from LOS', status: 'Ready to Ship' },
               { id: 'docs-2', type: 'Deed of Trust', filename: 'Deed_of_Trust_Recorded', date: '2/28/26, 9:05 AM', createdBy: 'MindyWebb', source: 'Imported from LOS', status: 'Approved' },
               { id: 'docs-3', type: 'Right of Rescission', filename: 'Right_of_Rescission_Signed', date: '2/28/26, 9:10 AM', createdBy: 'MindyWebb', source: 'Imported from LOS', status: 'Approved' },
             ]},
-            { name: 'INC', count: 30, docs: [
+            { name: 'GOV', categoryId: 1000008, count: 4, docs: [
+              { id: 'gov-1', type: 'AUS Findings', filename: 'DU_Approve_Eligible_Findings', date: '1/12/26, 1:10 PM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Approved' },
+              { id: 'gov-2', type: 'FHA Case Number Assignment', filename: 'FHA_Case_Number_Assignment', date: '1/13/26, 9:00 AM', createdBy: 'KylieGrossman', source: 'Imported from LOS', status: 'Approved' },
+              { id: 'gov-3', type: 'HUD-92900-A', filename: 'HUD_92900A_Addendum_Signed', date: '2/28/26, 9:30 AM', createdBy: 'MindyWebb', source: 'Imported from LOS', status: 'Ready to Ship' },
+              { id: 'gov-4', type: 'MIP Disclosure', filename: 'MIP_Disclosure_Borrower_Signed', date: '1/12/26, 2:00 PM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Approved' },
+            ]},
+            { name: 'INC', categoryId: 1000004, count: 30, docs: [
               { id: 'inc-1', type: 'W-2', filename: 'W2_2024_Ryan_Lively', date: '1/14/26, 8:00 AM', createdBy: 'Shannon Lang', source: '', status: 'Approved' },
               { id: 'inc-2', type: 'Pay Stubs', filename: 'PayStubs_Dec2025_Jan2026', date: '1/14/26, 8:05 AM', createdBy: 'Shannon Lang', source: '', status: 'Reviewed' },
               { id: 'inc-3', type: 'Tax Returns', filename: '2024_Federal_Tax_Return', date: '1/14/26, 8:10 AM', createdBy: 'Shannon Lang', source: 'Imported from LOS', status: 'Missing Pages' },
             ]},
-            { name: 'POST CLSNG', count: 6, docs: [
+            { name: 'MCC', categoryId: 1000018, count: 1, docs: [
+              { id: 'mcc-1', type: 'Mortgage Credit Certificate', filename: 'MCC_Certificate_Ryan_Lively', date: '1/20/26, 11:00 AM', createdBy: 'KylieGrossman', source: 'Imported from LOS', status: 'Approved' },
+            ]},
+            { name: 'MISC', categoryId: 1000010, count: 3, docs: [
+              { id: 'misc-1', type: 'HOI Policy', filename: 'HOI_Declarations_Page', date: '1/14/26, 7:00 AM', createdBy: 'Shannon Lang', source: '', status: 'Approved' },
+              { id: 'misc-2', type: 'Flood Certification', filename: 'FEMA_Flood_Cert', date: '1/14/26, 7:05 AM', createdBy: 'Shannon Lang', source: 'Imported from LOS', status: 'Approved' },
+              { id: 'misc-3', type: 'USPS Address Verification', filename: 'USPS_Address_Verification', date: '1/14/26, 7:10 AM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Approved' },
+            ]},
+            { name: 'POST CLSNG', categoryId: 1000015, count: 6, docs: [
               { id: 'postclsng-1', type: 'Post-Closing Checklist', filename: 'Post_Closing_Checklist_Complete', date: '3/5/26, 8:00 AM', createdBy: 'KylieGrossman', source: '', status: 'Approved' },
               { id: 'postclsng-2', type: 'Recorded Deed', filename: 'Recorded_Deed_of_Trust', date: '3/10/26, 2:00 PM', createdBy: 'KylieGrossman', source: 'Imported from LOS', status: 'Not Reviewed' },
             ]},
-            { name: 'PROP', count: 20, docs: [
+            { name: 'PROP', categoryId: 1000006, count: 20, docs: [
               { id: 'prop-1', type: 'Appraisal', filename: 'Full_Appraisal_Report_2026', date: '1/20/26, 10:00 AM', createdBy: 'KylieGrossman', source: 'Imported from LOS', status: 'Approved' },
               { id: 'prop-2', type: 'Purchase Contract', filename: 'Fully_Executed_Purchase_Contract', date: '1/12/26, 2:00 PM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Approved' },
               { id: 'prop-3', type: 'Title Commitment', filename: 'Title_Commitment_Prelim', date: '1/18/26, 11:30 AM', createdBy: 'MindyWebb', source: '', status: 'Incomplete' },
             ]},
-            { name: 'TITLE', count: 4, docs: [
+            { name: 'PTF DOCS', categoryId: 1000013, count: 4, docs: [
+              { id: 'ptf-1', type: 'Pre-Funding Checklist', filename: 'Pre_Funding_Checklist_Complete', date: '2/26/26, 8:00 AM', createdBy: 'KylieGrossman', source: '', status: 'Approved' },
+              { id: 'ptf-2', type: 'Wire Instructions', filename: 'PTF_Wire_Instructions_Verified', date: '2/26/26, 8:15 AM', createdBy: 'KylieGrossman', source: '', status: 'Reviewed' },
+              { id: 'ptf-3', type: 'PTF Condition', filename: 'PTF_Condition_Final_CD_Signed', date: '2/25/26, 4:00 PM', createdBy: 'MindyWebb', source: 'Imported from LOS', status: 'Approved' },
+            ]},
+            { name: 'RENO', categoryId: 1000019, count: 0, docs: [] },
+            { name: 'TITLE', categoryId: 1000009, count: 4, docs: [
               { id: 'title-1', type: 'Title Policy', filename: 'Owners_Title_Policy', date: '2/28/26, 8:00 AM', createdBy: 'MindyWebb', source: 'Imported from LOS', status: 'Approved' },
               { id: 'title-2', type: 'CPL', filename: 'Closing_Protection_Letter', date: '2/28/26, 8:05 AM', createdBy: 'MindyWebb', source: '', status: 'Ready to Ship' },
             ]},
-            { name: 'ALL OTHERS', count: 6, isOther: true, docs: [
-              { id: 'other-1', type: 'Unclassified', filename: 'HOI_Declarations_Page', date: '1/14/26, 7:00 AM', createdBy: 'Shannon Lang', source: '', status: 'Not Reviewed' },
-              { id: 'other-2', type: 'Unclassified', filename: 'FEMA_Flood_Cert', date: '1/14/26, 7:05 AM', createdBy: 'Shannon Lang', source: 'Imported from LOS', status: 'Not Reviewed' },
+            { name: 'Unsigned', categoryId: 1000017, count: 3, docs: [
+              { id: 'unsigned-1', type: 'Note (Unsigned)', filename: 'Note_UNSIGNED_PreClose', date: '2/27/26, 3:00 PM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Not Reviewed' },
+              { id: 'unsigned-2', type: 'Deed of Trust (Unsigned)', filename: 'Deed_UNSIGNED_PreClose', date: '2/27/26, 3:05 PM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Not Reviewed' },
+              { id: 'unsigned-3', type: 'Right of Rescission (Unsigned)', filename: 'ROR_UNSIGNED_PreClose', date: '2/27/26, 3:10 PM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Not Reviewed' },
+            ]},
+            { name: 'WHS', categoryId: 1000014, count: 2, docs: [
+              { id: 'whs-1', type: 'Warehouse Funding Request', filename: 'Warehouse_Funding_Request_CMG', date: '2/28/26, 7:00 AM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Approved' },
+              { id: 'whs-2', type: 'Warehouse Payoff', filename: 'Warehouse_Payoff_Confirmation', date: '3/5/26, 2:00 PM', createdBy: 'KylieGrossman', source: '', status: 'Not Reviewed' },
+            ]},
+            { name: 'Unassigned', categoryId: null, isOther: true, count: 4, docs: [
               { id: 'other-u1', type: 'Unclassified', filename: 'Unnamed_Document_01142026', date: '1/14/26, 10:22 AM', createdBy: 'Shannon Lang', source: 'Imported from LOS', status: 'Not Reviewed' },
               { id: 'other-u2', type: 'Unclassified', filename: 'Upload_022026_untitled', date: '2/1/26, 4:15 PM', createdBy: 'KylieGrossman', source: '', status: 'Not Reviewed' },
               { id: 'other-u3', type: 'Unclassified', filename: 'BytePro_Import_NoCategory', date: '1/12/26, 1:00 PM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Not Reviewed' },
@@ -1668,7 +1701,7 @@ const BoBSingleFlow = () => {
                         {cat.isOther && (
                           <span
                             className="ml-1 flex-shrink-0 cursor-help"
-                            title="ALL OTHERS — Unclassified Documents&#10;&#10;Documents appear here when they were stored in the system of record (BytePro) without a valid Document Type ID (DocTypeID). This is a data quality condition, not a document status.&#10;&#10;Common causes:&#10;• A parent category container was created in the origination LOS but no document type was assigned at the time of upload&#10;• A document was manually uploaded by a user without selecting a recognized doc type&#10;• A system import (e.g. SVC-BytePushback-PROD) received a file with a null or unrecognized DocTypeID from the source system&#10;&#10;These documents are not missing or invalid — they exist in the loan file but cannot be categorized automatically. A post-close team member should review each document, identify its correct type, and reclassify it into the appropriate category."
+                            title="Unassigned — Documents appear here when stored in the system of record (BytePro) without a valid Document Type ID (DocTypeID). This is a data quality condition, not a document status."
                           >
                             <Info size={12} className="text-amber-500" />
                           </span>
