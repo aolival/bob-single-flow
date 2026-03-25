@@ -1475,9 +1475,10 @@ const BoBSingleFlow = () => {
               <div className="px-3 py-2 border-b bg-white flex items-center justify-between flex-shrink-0">
                 <button
                   onClick={() => setShowDocsPanel(false)}
-                  className="shadow-sm border border-gray-300 bg-white px-3 py-1.5 rounded text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                  className="shadow-sm border border-gray-300 bg-white px-3 py-1.5 rounded text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-1.5"
                 >
-                  Stored Document Manager
+                  <X size={14} />
+                  Close Doc Manager
                 </button>
                 <button className="flex items-center gap-1.5 px-2 py-1.5 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-50 shadow-sm">
                   <RefreshCw size={12} />
