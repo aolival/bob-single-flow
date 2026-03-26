@@ -10,6 +10,12 @@ import ExampleScreenA from './ExampleScreenA';
 import ExampleScreenB from './ExampleScreenB';
 import ExampleScreenC from './ExampleScreenC';
 
+// Module-level constant — 20 PROD DocumentCategoryIDs (A–Z); All Others is Stored Doc Manager only
+const STACKING_ORDER_CATEGORIES = [
+  'APP','ASSET','AUDIT','BOND SUB FIN','CONST','CORR','CRED','DISC','DOCS',
+  'GOV','INC','MCC','MISC','POST CLSNG','PROP','PTF DOCS','RENO','TITLE','Unsigned','WHS'
+];
+
 const BoBSingleFlow = () => {
   const [subjectLoan, setSubjectLoan] = useState('');
   const [bundleName, setBundleName] = useState('');
@@ -30,7 +36,7 @@ const BoBSingleFlow = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [loanValidated, setLoanValidated] = useState(false);
-  const [selectedCategories, setSelectedCategories] = useState(new Set());
+  const [selectedCategories, setSelectedCategories] = useState(new Set(STACKING_ORDER_CATEGORIES));
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showDocStorageModal, setShowDocStorageModal] = useState(false);
@@ -764,8 +770,8 @@ const BoBSingleFlow = () => {
       docs = docs.filter(d => d.status === 'Located - Not Approved');
     }
 
-    // Filter by category (empty Set = show all)
-    if (selectedCategories.size > 0) {
+    // Filter by category — full set = show all, subset/empty = show only selected
+    if (selectedCategories.size < STACKING_ORDER_CATEGORIES.length) {
       docs = docs.filter(d => selectedCategories.has(d.category));
     }
 
@@ -777,11 +783,6 @@ const BoBSingleFlow = () => {
     return docs;
   };
 
-  // 20 PROD DocumentCategoryIDs (A–Z) — stacking order grid categories only; All Others is Stored Doc Manager only
-  const STACKING_ORDER_CATEGORIES = [
-    'APP','ASSET','AUDIT','BOND SUB FIN','CONST','CORR','CRED','DISC','DOCS',
-    'GOV','INC','MCC','MISC','POST CLSNG','PROP','PTF DOCS','RENO','TITLE','Unsigned','WHS'
-  ];
 
   const filteredDocs = getFilteredDocs();
   const missingCount = stackingOrder.filter(d => d.status === 'Missing').length;
@@ -1233,78 +1234,77 @@ const BoBSingleFlow = () => {
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className={`px-3 py-2 text-left text-xs font-medium uppercase tracking-wider ${
-                        selectedCategories.size > 0 ? 'bg-teal-50 text-teal-700' : 'text-gray-500'
-                      }`}>
-                        <div className="flex items-center justify-between">
-                          <span>Category</span>
-                          <div className="relative">
-                            <button
-                              onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                              className={`ml-2 p-1 rounded ${
-                                selectedCategories.size > 0
-                                  ? 'bg-teal-200 hover:bg-teal-300'
-                                  : 'hover:bg-gray-200'
-                              }`}
-                            >
-                              <Filter size={13} className={selectedCategories.size > 0 ? 'text-teal-700' : 'text-gray-600'} />
-                            </button>
-                            {showCategoryDropdown && (
-                              <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-300 rounded-lg shadow-lg z-30" onClick={e => e.stopPropagation()}>
-                                {/* Select All / Unselect All */}
-                                <div className="flex gap-2 px-3 py-2 border-b border-gray-100">
-                                  <button
-                                    onClick={() => setSelectedCategories(new Set())}
-                                    className="flex-1 text-xs text-teal-700 font-semibold hover:underline text-left"
-                                  >
-                                    Select All
-                                  </button>
-                                  <button
-                                    onClick={() => setSelectedCategories(new Set(STACKING_ORDER_CATEGORIES))}
-                                    className="flex-1 text-xs text-gray-500 hover:underline text-right"
-                                  >
-                                    Unselect All
-                                  </button>
-                                </div>
-                                {/* Category checkboxes */}
-                                <div className="py-1 max-h-64 overflow-y-auto">
-                                  {STACKING_ORDER_CATEGORIES.map(cat => (
-                                    <label key={cat} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer">
-                                      <input
-                                        type="checkbox"
-                                        checked={selectedCategories.size === 0 || !selectedCategories.has(cat)}
-                                        onChange={() => {
-                                          const next = new Set(
-                                            selectedCategories.size === 0
-                                              ? STACKING_ORDER_CATEGORIES
-                                              : selectedCategories
-                                          );
-                                          if (next.has(cat)) next.delete(cat); else next.add(cat);
-                                          // If all checked again, reset to empty (= show all)
-                                          setSelectedCategories(next.size === STACKING_ORDER_CATEGORIES.length ? new Set() : next);
-                                        }}
-                                        className="accent-teal-600 w-3.5 h-3.5 flex-shrink-0"
-                                      />
-                                      <span className="text-xs text-gray-700">{cat}</span>
-                                    </label>
-                                  ))}
-                                </div>
-                                {/* Footer clear */}
-                                {selectedCategories.size > 0 && (
-                                  <div className="border-t border-gray-100 px-3 py-2">
-                                    <button
-                                      onClick={() => { setSelectedCategories(new Set()); setShowCategoryDropdown(false); }}
-                                      className="text-xs text-red-500 hover:underline"
-                                    >
-                                      Clear filter
-                                    </button>
+                      {(() => {
+                        const isFiltered = selectedCategories.size < STACKING_ORDER_CATEGORIES.length;
+                        const allSelected = selectedCategories.size === STACKING_ORDER_CATEGORIES.length;
+                        return (
+                          <th className={`px-3 py-2 text-left text-xs font-medium uppercase tracking-wider ${isFiltered ? 'bg-teal-50 text-teal-700' : 'text-gray-500'}`}>
+                            <div className="flex items-center justify-between">
+                              <span>Category</span>
+                              <div className="relative">
+                                <button
+                                  onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                                  className={`ml-2 p-1 rounded ${isFiltered ? 'bg-teal-200 hover:bg-teal-300' : 'hover:bg-gray-200'}`}
+                                >
+                                  <Filter size={13} className={isFiltered ? 'text-teal-700' : 'text-gray-600'} />
+                                </button>
+                                {showCategoryDropdown && (
+                                  <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-200 rounded-lg shadow-xl z-30" onClick={e => e.stopPropagation()}>
+                                    {/* Select All row — like Excel */}
+                                    <div className="px-3 py-2 border-b border-gray-100">
+                                      <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          checked={allSelected}
+                                          ref={el => { if (el) el.indeterminate = !allSelected && selectedCategories.size > 0; }}
+                                          onChange={() => setSelectedCategories(allSelected ? new Set() : new Set(STACKING_ORDER_CATEGORIES))}
+                                          className="accent-teal-600 w-3.5 h-3.5"
+                                        />
+                                        <span className="text-xs font-semibold text-gray-700">(Select All)</span>
+                                      </label>
+                                    </div>
+                                    {/* Individual category checkboxes */}
+                                    <div className="py-1 max-h-64 overflow-y-auto">
+                                      {STACKING_ORDER_CATEGORIES.map(cat => (
+                                        <label key={cat} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={selectedCategories.has(cat)}
+                                            onChange={() => {
+                                              const next = new Set(selectedCategories);
+                                              if (next.has(cat)) next.delete(cat); else next.add(cat);
+                                              setSelectedCategories(next);
+                                            }}
+                                            className="accent-teal-600 w-3.5 h-3.5 flex-shrink-0"
+                                          />
+                                          <span className="text-xs text-gray-700">{cat}</span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                    {/* Footer */}
+                                    <div className="border-t border-gray-100 flex justify-end gap-3 px-3 py-2">
+                                      <button
+                                        onClick={() => setShowCategoryDropdown(false)}
+                                        className="text-xs text-gray-500 hover:text-gray-700"
+                                      >
+                                        Close
+                                      </button>
+                                      {isFiltered && (
+                                        <button
+                                          onClick={() => { setSelectedCategories(new Set(STACKING_ORDER_CATEGORIES)); setShowCategoryDropdown(false); }}
+                                          className="text-xs text-red-500 hover:underline"
+                                        >
+                                          Clear filter
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
                                 )}
                               </div>
-                            )}
-                          </div>
-                        </div>
-                      </th>
+                            </div>
+                          </th>
+                        );
+                      })()}
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
