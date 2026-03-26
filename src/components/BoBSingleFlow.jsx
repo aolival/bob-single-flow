@@ -150,37 +150,35 @@ const BoBSingleFlow = () => {
     let requiredDocuments;
 
     if (bundle === 'C2C - QC Bundle') {
-      // Specific stacking order for C2C - QC Bundle
       requiredDocuments = [
-        { documentType: 'HOI Policy', category: 'Insurance', displayOrder: 1 },
-        { documentType: 'Title', category: 'Title', displayOrder: 2 },
-        { documentType: 'CPL', category: 'Title', displayOrder: 3 },
-        { documentType: 'Appraisal', category: 'Property', displayOrder: 4 },
-        { documentType: 'Purchase Contract', category: 'Property', displayOrder: 5 },
-        { documentType: 'Bond Resv./Comm.', category: 'Financial', displayOrder: 6 },
-        { documentType: 'Credit Report', category: 'Credit', displayOrder: 7 },
-        { documentType: 'Flood Cert', category: 'Insurance', displayOrder: 8 },
-        { documentType: 'Docs (UNSIGNED - PTF BUCKET)', category: 'Documents', displayOrder: 9 },
-        { documentType: 'Lock Rate lock', category: 'Loan', displayOrder: 10 },
-        { documentType: 'USPS', category: 'Verification', displayOrder: 11 },
+        { documentType: 'HOI Policy', category: 'MISC', displayOrder: 1 },
+        { documentType: 'Title', category: 'TITLE', displayOrder: 2 },
+        { documentType: 'CPL', category: 'TITLE', displayOrder: 3 },
+        { documentType: 'Appraisal', category: 'PROP', displayOrder: 4 },
+        { documentType: 'Purchase Contract', category: 'PROP', displayOrder: 5 },
+        { documentType: 'Bond Resv./Comm.', category: 'BOND SUB FIN', displayOrder: 6 },
+        { documentType: 'Credit Report', category: 'CRED', displayOrder: 7 },
+        { documentType: 'Flood Cert', category: 'MISC', displayOrder: 8 },
+        { documentType: 'Docs (UNSIGNED - PTF BUCKET)', category: 'Unsigned', displayOrder: 9 },
+        { documentType: 'Lock Rate lock', category: 'APP', displayOrder: 10 },
+        { documentType: 'USPS', category: 'MISC', displayOrder: 11 },
       ];
     } else {
-      // Default stacking order for other bundles
       requiredDocuments = [
-        { documentType: '1003 Application', category: 'Application', displayOrder: 1 },
-        { documentType: 'Credit Report', category: 'Credit', displayOrder: 2 },
-        { documentType: 'Appraisal', category: 'Property', displayOrder: 3 },
-        { documentType: 'Title Insurance', category: 'Title', displayOrder: 4 },
-        { documentType: 'W-2', category: 'Income', displayOrder: 5 },
-        { documentType: 'Pay Stubs', category: 'Income', displayOrder: 6 },
-        { documentType: 'Tax Returns', category: 'Income', displayOrder: 7 },
-        { documentType: 'Self-Employment Income', category: 'Income', displayOrder: 8 },
-        { documentType: 'Bank Statements', category: 'Assets', displayOrder: 9 },
-        { documentType: 'Investment Statements', category: 'Assets', displayOrder: 10 },
-        { documentType: 'Gift Letter', category: 'Assets', displayOrder: 11 },
-        { documentType: 'Closing Disclosure', category: 'Closing', displayOrder: 12 },
-        { documentType: 'Promissory Note', category: 'Closing', displayOrder: 13 },
-        { documentType: 'Right of Rescission', category: 'Closing', displayOrder: 14 },
+        { documentType: '1003 Application', category: 'APP', displayOrder: 1 },
+        { documentType: 'Credit Report', category: 'CRED', displayOrder: 2 },
+        { documentType: 'Appraisal', category: 'PROP', displayOrder: 3 },
+        { documentType: 'Title Insurance', category: 'TITLE', displayOrder: 4 },
+        { documentType: 'W-2', category: 'INC', displayOrder: 5 },
+        { documentType: 'Pay Stubs', category: 'INC', displayOrder: 6 },
+        { documentType: 'Tax Returns', category: 'INC', displayOrder: 7 },
+        { documentType: 'Self-Employment Income', category: 'INC', displayOrder: 8 },
+        { documentType: 'Bank Statements', category: 'ASSET', displayOrder: 9 },
+        { documentType: 'Investment Statements', category: 'ASSET', displayOrder: 10 },
+        { documentType: 'Gift Letter', category: 'ASSET', displayOrder: 11 },
+        { documentType: 'Closing Disclosure', category: 'DISC', displayOrder: 12 },
+        { documentType: 'Promissory Note', category: 'DOCS', displayOrder: 13 },
+        { documentType: 'Right of Rescission', category: 'DOCS', displayOrder: 14 },
       ];
     }
 
