@@ -1252,6 +1252,7 @@ const BoBSingleFlow = () => {
                               <span>Category</span>
                               <button
                                 onClick={e => {
+                                  e.stopPropagation();
                                   if (!showCategoryDropdown) {
                                     const rect = e.currentTarget.getBoundingClientRect();
                                     setCategoryDropdownPos({ top: rect.bottom + 4, left: rect.left });
