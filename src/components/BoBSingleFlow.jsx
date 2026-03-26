@@ -38,6 +38,7 @@ const BoBSingleFlow = () => {
   const [loanValidated, setLoanValidated] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState(new Set(STACKING_ORDER_CATEGORIES));
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [categoryDropdownPos, setCategoryDropdownPos] = useState({ top: 0, left: 0 });
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showDocStorageModal, setShowDocStorageModal] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState('');
@@ -112,6 +113,14 @@ const BoBSingleFlow = () => {
       }, 100);
     }
   }, []);
+
+  // Close category dropdown on outside click
+  useEffect(() => {
+    if (!showCategoryDropdown) return;
+    const close = () => setShowCategoryDropdown(false);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [showCategoryDropdown]);
 
   // Bundle Names from dbo.Bundle (~80 options)
   const bundleOptions = [
@@ -1188,77 +1197,6 @@ const BoBSingleFlow = () => {
                   <span>Hide Not Applicable Docs</span>
                 </label>
 
-                {/* Category filter — always visible in toolbar */}
-                <div className="relative ml-1">
-                  {(() => {
-                    const isFiltered = selectedCategories.size < STACKING_ORDER_CATEGORIES.length;
-                    const allSelected = selectedCategories.size === STACKING_ORDER_CATEGORIES.length;
-                    return (
-                      <>
-                        <button
-                          onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium whitespace-nowrap border ${
-                            isFiltered
-                              ? 'bg-teal-50 border-teal-400 text-teal-700'
-                              : 'bg-white border-gray-300 text-gray-600'
-                          }`}
-                        >
-                          <Filter size={12} />
-                          <span>Category{isFiltered ? ` (${selectedCategories.size})` : ''}</span>
-                          <ChevronDown size={12} />
-                        </button>
-                        {showCategoryDropdown && (
-                          <div className="absolute left-0 top-full mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-xl z-50" onClick={e => e.stopPropagation()}>
-                            {/* Select All — Excel-style */}
-                            <div className="px-3 py-2 border-b border-gray-100">
-                              <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={allSelected}
-                                  ref={el => { if (el) el.indeterminate = !allSelected && selectedCategories.size > 0; }}
-                                  onChange={() => setSelectedCategories(allSelected ? new Set() : new Set(STACKING_ORDER_CATEGORIES))}
-                                  className="accent-teal-600 w-3.5 h-3.5"
-                                />
-                                <span className="text-xs font-semibold text-gray-700">(Select All)</span>
-                              </label>
-                            </div>
-                            {/* Individual categories */}
-                            <div className="py-1 max-h-64 overflow-y-auto">
-                              {STACKING_ORDER_CATEGORIES.map(cat => (
-                                <label key={cat} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedCategories.has(cat)}
-                                    onChange={() => {
-                                      const next = new Set(selectedCategories);
-                                      if (next.has(cat)) next.delete(cat); else next.add(cat);
-                                      setSelectedCategories(next);
-                                    }}
-                                    className="accent-teal-600 w-3.5 h-3.5 flex-shrink-0"
-                                  />
-                                  <span className="text-xs text-gray-700">{cat}</span>
-                                </label>
-                              ))}
-                            </div>
-                            {/* Footer */}
-                            <div className="border-t border-gray-100 flex justify-end gap-3 px-3 py-2">
-                              <button onClick={() => setShowCategoryDropdown(false)} className="text-xs text-gray-500 hover:text-gray-700">Close</button>
-                              {isFiltered && (
-                                <button
-                                  onClick={() => { setSelectedCategories(new Set(STACKING_ORDER_CATEGORIES)); setShowCategoryDropdown(false); }}
-                                  className="text-xs text-red-500 hover:underline"
-                                >
-                                  Clear
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-
                 {/* Push Stored Doc Manager + refresh to the right */}
                 <div className="flex-1" />
 
@@ -1305,9 +1243,30 @@ const BoBSingleFlow = () => {
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className={`px-3 py-2 text-left text-xs font-medium uppercase tracking-wider ${selectedCategories.size < STACKING_ORDER_CATEGORIES.length ? 'bg-teal-50 text-teal-700' : 'text-gray-500'}`}>
-                        Category
-                      </th>
+                      {(() => {
+                        const isFiltered = selectedCategories.size < STACKING_ORDER_CATEGORIES.length;
+                        const allSelected = selectedCategories.size === STACKING_ORDER_CATEGORIES.length;
+                        return (
+                          <th className={`px-3 py-2 text-left text-xs font-medium uppercase tracking-wider ${isFiltered ? 'bg-teal-50 text-teal-700' : 'text-gray-500'}`}>
+                            <div className="flex items-center gap-1">
+                              <span>Category</span>
+                              <button
+                                onClick={e => {
+                                  if (!showCategoryDropdown) {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setCategoryDropdownPos({ top: rect.bottom + 4, left: rect.left });
+                                  }
+                                  setShowCategoryDropdown(v => !v);
+                                }}
+                                className={`p-0.5 rounded ${isFiltered ? 'text-teal-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                title="Filter by category"
+                              >
+                                <Filter size={12} />
+                              </button>
+                            </div>
+                          </th>
+                        );
+                      })()}
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -1394,6 +1353,63 @@ const BoBSingleFlow = () => {
                 </table>
                 </div>{/* end scroll container */}
               </div>{/* end border wrapper */}
+
+              {/* Category filter panel — fixed to viewport, escapes all overflow containers */}
+              {showCategoryDropdown && (() => {
+                const isFiltered = selectedCategories.size < STACKING_ORDER_CATEGORIES.length;
+                const allSelected = selectedCategories.size === STACKING_ORDER_CATEGORIES.length;
+                return (
+                  <div
+                    style={{ position: 'fixed', top: categoryDropdownPos.top, left: categoryDropdownPos.left, zIndex: 9999 }}
+                    className="w-52 bg-white border border-gray-200 rounded-lg shadow-xl"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {/* (Select All) row — Excel style */}
+                    <div className="px-3 py-2 border-b border-gray-100">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          ref={el => { if (el) el.indeterminate = !allSelected && selectedCategories.size > 0; }}
+                          onChange={() => setSelectedCategories(allSelected ? new Set() : new Set(STACKING_ORDER_CATEGORIES))}
+                          className="accent-teal-600 w-3.5 h-3.5"
+                        />
+                        <span className="text-xs font-semibold text-gray-700">(Select All)</span>
+                      </label>
+                    </div>
+                    {/* Individual categories */}
+                    <div className="py-1 max-h-64 overflow-y-auto">
+                      {STACKING_ORDER_CATEGORIES.map(cat => (
+                        <label key={cat} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedCategories.has(cat)}
+                            onChange={() => {
+                              const next = new Set(selectedCategories);
+                              if (next.has(cat)) next.delete(cat); else next.add(cat);
+                              setSelectedCategories(next);
+                            }}
+                            className="accent-teal-600 w-3.5 h-3.5 flex-shrink-0"
+                          />
+                          <span className="text-xs text-gray-700">{cat}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {/* Footer */}
+                    <div className="border-t border-gray-100 flex justify-end gap-3 px-3 py-2">
+                      <button onClick={() => setShowCategoryDropdown(false)} className="text-xs text-gray-500 hover:text-gray-700">Close</button>
+                      {isFiltered && (
+                        <button
+                          onClick={() => { setSelectedCategories(new Set(STACKING_ORDER_CATEGORIES)); setShowCategoryDropdown(false); }}
+                          className="text-xs text-red-500 hover:underline"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
             </div>
           </div>
