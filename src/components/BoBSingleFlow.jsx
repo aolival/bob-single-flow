@@ -30,7 +30,7 @@ const BoBSingleFlow = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [loanValidated, setLoanValidated] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategories, setSelectedCategories] = useState(new Set());
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showDocStorageModal, setShowDocStorageModal] = useState(false);
@@ -764,9 +764,9 @@ const BoBSingleFlow = () => {
       docs = docs.filter(d => d.status === 'Located - Not Approved');
     }
 
-    // Filter by category
-    if (selectedCategory !== 'all') {
-      docs = docs.filter(d => d.category === selectedCategory);
+    // Filter by category (empty Set = show all)
+    if (selectedCategories.size > 0) {
+      docs = docs.filter(d => selectedCategories.has(d.category));
     }
 
     // Filter out N/A docs if checkbox is checked
@@ -777,8 +777,11 @@ const BoBSingleFlow = () => {
     return docs;
   };
 
-  // Get unique categories from stacking order
-  const uniqueCategories = [...new Set(stackingOrder.map(doc => doc.category))].sort();
+  // 20 PROD DocumentCategoryIDs (A–Z) — stacking order grid categories only; All Others is Stored Doc Manager only
+  const STACKING_ORDER_CATEGORIES = [
+    'APP','ASSET','AUDIT','BOND SUB FIN','CONST','CORR','CRED','DISC','DOCS',
+    'GOV','INC','MCC','MISC','POST CLSNG','PROP','PTF DOCS','RENO','TITLE','Unsigned','WHS'
+  ];
 
   const filteredDocs = getFilteredDocs();
   const missingCount = stackingOrder.filter(d => d.status === 'Missing').length;
@@ -1219,7 +1222,7 @@ const BoBSingleFlow = () => {
               </div>
 
               {/* Documents Table — only this scrolls, form section above stays fixed */}
-              <div className="border border-gray-200 rounded overflow-hidden">
+              <div className="border border-gray-200 rounded overflow-hidden" onClick={() => showCategoryDropdown && setShowCategoryDropdown(false)}>
                 <div className="overflow-y-auto max-h-[calc(100vh-370px)]">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b sticky top-0 z-10">
@@ -1231,7 +1234,7 @@ const BoBSingleFlow = () => {
                         Status
                       </th>
                       <th className={`px-3 py-2 text-left text-xs font-medium uppercase tracking-wider ${
-                        selectedCategory !== 'all' ? 'bg-teal-50 text-teal-700' : 'text-gray-500'
+                        selectedCategories.size > 0 ? 'bg-teal-50 text-teal-700' : 'text-gray-500'
                       }`}>
                         <div className="flex items-center justify-between">
                           <span>Category</span>
@@ -1239,42 +1242,64 @@ const BoBSingleFlow = () => {
                             <button
                               onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
                               className={`ml-2 p-1 rounded ${
-                                selectedCategory !== 'all'
+                                selectedCategories.size > 0
                                   ? 'bg-teal-200 hover:bg-teal-300'
                                   : 'hover:bg-gray-200'
                               }`}
                             >
-                              <ChevronDown size={14} className={selectedCategory !== 'all' ? 'text-teal-700' : 'text-gray-600'} />
+                              <Filter size={13} className={selectedCategories.size > 0 ? 'text-teal-700' : 'text-gray-600'} />
                             </button>
                             {showCategoryDropdown && (
-                              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
-                                <div className="py-1">
+                              <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-300 rounded-lg shadow-lg z-30" onClick={e => e.stopPropagation()}>
+                                {/* Select All / Unselect All */}
+                                <div className="flex gap-2 px-3 py-2 border-b border-gray-100">
                                   <button
-                                    onClick={() => {
-                                      setSelectedCategory('all');
-                                      setShowCategoryDropdown(false);
-                                    }}
-                                    className={`w-full text-left px-4 py-2 text-xs hover:bg-gray-100 ${
-                                      selectedCategory === 'all' ? 'bg-teal-50 text-teal-700 font-semibold' : 'text-gray-700'
-                                    }`}
+                                    onClick={() => setSelectedCategories(new Set())}
+                                    className="flex-1 text-xs text-teal-700 font-semibold hover:underline text-left"
                                   >
-                                    All Categories
+                                    Select All
                                   </button>
-                                  {uniqueCategories.map(category => (
-                                    <button
-                                      key={category}
-                                      onClick={() => {
-                                        setSelectedCategory(category);
-                                        setShowCategoryDropdown(false);
-                                      }}
-                                      className={`w-full text-left px-4 py-2 text-xs hover:bg-gray-100 ${
-                                        selectedCategory === category ? 'bg-teal-50 text-teal-700 font-semibold' : 'text-gray-700'
-                                      }`}
-                                    >
-                                      {category}
-                                    </button>
+                                  <button
+                                    onClick={() => setSelectedCategories(new Set(STACKING_ORDER_CATEGORIES))}
+                                    className="flex-1 text-xs text-gray-500 hover:underline text-right"
+                                  >
+                                    Unselect All
+                                  </button>
+                                </div>
+                                {/* Category checkboxes */}
+                                <div className="py-1 max-h-64 overflow-y-auto">
+                                  {STACKING_ORDER_CATEGORIES.map(cat => (
+                                    <label key={cat} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedCategories.size === 0 || !selectedCategories.has(cat)}
+                                        onChange={() => {
+                                          const next = new Set(
+                                            selectedCategories.size === 0
+                                              ? STACKING_ORDER_CATEGORIES
+                                              : selectedCategories
+                                          );
+                                          if (next.has(cat)) next.delete(cat); else next.add(cat);
+                                          // If all checked again, reset to empty (= show all)
+                                          setSelectedCategories(next.size === STACKING_ORDER_CATEGORIES.length ? new Set() : next);
+                                        }}
+                                        className="accent-teal-600 w-3.5 h-3.5 flex-shrink-0"
+                                      />
+                                      <span className="text-xs text-gray-700">{cat}</span>
+                                    </label>
                                   ))}
                                 </div>
+                                {/* Footer clear */}
+                                {selectedCategories.size > 0 && (
+                                  <div className="border-t border-gray-100 px-3 py-2">
+                                    <button
+                                      onClick={() => { setSelectedCategories(new Set()); setShowCategoryDropdown(false); }}
+                                      className="text-xs text-red-500 hover:underline"
+                                    >
+                                      Clear filter
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
