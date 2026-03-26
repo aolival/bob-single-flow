@@ -1385,7 +1385,7 @@ const BoBSingleFlow = () => {
 
         {/* Right Panel: Final Documents in LOS */}
         {showDocsPanel && (() => {
-          // Categories: 20 PROD DocumentCategoryIDs sorted A–Z, Unassigned pinned last (no valid DocTypeID)
+          // Categories: 20 PROD DocumentCategoryIDs sorted A–Z, All Others pinned last (no valid DocTypeID)
           const FINAL_DOCS_CATEGORIES = [
             { name: 'APP', categoryId: 1000001, count: 7, docs: [
               { id: 'app-1', type: 'Loan Application', filename: '20251118194221_Loan_Application_Ryan_Lively', date: '11/18/25, 11:42 AM', createdBy: 'Borrower 1003', source: '', status: 'Approved' },
@@ -1477,7 +1477,7 @@ const BoBSingleFlow = () => {
               { id: 'whs-1', type: 'Warehouse Funding Request', filename: 'Warehouse_Funding_Request_CMG', date: '2/28/26, 7:00 AM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Approved' },
               { id: 'whs-2', type: 'Warehouse Payoff', filename: 'Warehouse_Payoff_Confirmation', date: '3/5/26, 2:00 PM', createdBy: 'KylieGrossman', source: '', status: 'Not Reviewed' },
             ]},
-            { name: 'Unassigned', categoryId: null, isOther: true, count: 4, docs: [
+            { name: 'All Others', categoryId: null, isOther: true, count: 4, docs: [
               { id: 'other-u1', type: 'Unclassified', filename: 'Unnamed_Document_01142026', date: '1/14/26, 10:22 AM', createdBy: 'Shannon Lang', source: 'Imported from LOS', status: 'Not Reviewed' },
               { id: 'other-u2', type: 'Unclassified', filename: 'Upload_022026_untitled', date: '2/1/26, 4:15 PM', createdBy: 'KylieGrossman', source: '', status: 'Not Reviewed' },
               { id: 'other-u3', type: 'Unclassified', filename: 'BytePro_Import_NoCategory', date: '1/12/26, 1:00 PM', createdBy: 'SVC-BytePushback-PROD', source: 'Imported from LOS', status: 'Not Reviewed' },
@@ -1701,7 +1701,7 @@ const BoBSingleFlow = () => {
                         {cat.isOther && (
                           <span
                             className="ml-1 flex-shrink-0 cursor-help"
-                            title="Unassigned — Documents appear here when stored in the system of record (BytePro) without a valid Document Type ID (DocTypeID). This is a data quality condition, not a document status."
+                            title="All Others — Documents appear here when stored in the system of record (BytePro) without a valid Document Type ID (DocTypeID). This is a data quality condition, not a document status."
                           >
                             <Info size={12} className="text-amber-500" />
                           </span>
