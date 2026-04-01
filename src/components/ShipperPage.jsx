@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Calendar, Package, FileText, AlertCircle, Save, X, RefreshCw, ChevronDown, ChevronUp, Menu } from 'lucide-react';
 import { getAppUrl } from '../config/appUrls';
 
-const ShipperPage = ({ onMenuToggle }) => {
+const ShipperPage = ({ onMenuToggle, onNavigateBack }) => {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const initialFormData = {
     // Shipping Details (8 fields)
@@ -49,6 +50,14 @@ const ShipperPage = ({ onMenuToggle }) => {
   const handleRefresh = () => {
     setFormData(initialFormData);
     setExpandedSections(initialExpandedSections);
+  };
+
+  const handleSave = () => {
+    setIsSaving(true);
+    setTimeout(() => {
+      setIsSaving(false);
+      if (onNavigateBack) onNavigateBack();
+    }, 1500);
   };
 
   return (
@@ -182,13 +191,29 @@ const ShipperPage = ({ onMenuToggle }) => {
               <RefreshCw size={14} />
               Refresh
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition font-medium text-xs">
+            <button
+              onClick={() => { if (onNavigateBack) onNavigateBack(); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition font-medium text-xs"
+            >
               <X size={14} />
               Cancel
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500 text-white rounded hover:bg-teal-600 transition font-medium text-xs">
-              <Save size={14} />
-              Save Changes
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500 text-white rounded hover:bg-teal-600 transition font-medium text-xs disabled:opacity-60"
+            >
+              {isSaving ? (
+                <>
+                  <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save size={14} />
+                  Save Changes
+                </>
+              )}
             </button>
           </div>
         </div>

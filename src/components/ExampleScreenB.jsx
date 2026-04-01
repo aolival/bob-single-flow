@@ -112,9 +112,9 @@ const ExampleScreenB = ({ onMenuToggle }) => {
           <div className="flex items-center gap-3">
             <Database className="text-teal-600" size={24} />
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Example Screen B</h1>
+              <h1 className="text-lg font-bold text-gray-900">Clear to Close Review</h1>
               <p className="text-gray-600 text-xs mt-1">
-                This is a placeholder screen for future functionality
+                QC audit screen for reviewing Clear to Close conditions and final approval checklist.
               </p>
             </div>
           </div>
@@ -127,7 +127,7 @@ const ExampleScreenB = ({ onMenuToggle }) => {
               <Database className="text-teal-600" size={24} />
             </div>
             <h2 className="text-sm font-semibold text-gray-900 mb-2">
-              Example Screen B
+              Clear to Close Review
             </h2>
             <p className="text-gray-600 max-w-md mx-auto text-xs">
               This screen is currently a placeholder. Additional functionality and

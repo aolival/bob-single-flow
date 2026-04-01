@@ -1,12 +1,12 @@
 import React from 'react';
-import { X, Home, Package, FileText, Stethoscope, Activity } from 'lucide-react';
+import { X, Home, Package, FileText, Stethoscope, Activity, Receipt, CheckSquare } from 'lucide-react';
 import { getAppUrl } from '../config/appUrls';
 
 const NavigationPanel = ({ isOpen, onClose, onNavigate, currentPage }) => {
   const menuItems = [
     { id: 'shipper', label: 'Shipper', icon: Home, type: 'internal' },
-    { id: 'example-a', label: 'Example Screen A', icon: null, type: 'internal' },
-    { id: 'example-b', label: 'Example Screen B', icon: null, type: 'internal' },
+    { id: 'example-a', label: 'Recording Fee Reconciliation', icon: Receipt, type: 'internal' },
+    { id: 'example-b', label: 'Clear to Close Review', icon: CheckSquare, type: 'internal' },
     { id: 'example-c', label: 'Example Screen C', icon: null, type: 'internal' },
   ];
 

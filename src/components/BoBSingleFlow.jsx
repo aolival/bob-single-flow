@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { RefreshCw, Download, CheckCircle, XCircle, Loader2, File, X, Search, ChevronDown, ChevronRight, Lock, Eye, Filter, AlertTriangle, Menu, FolderOpen, Folder, ExternalLink, ArrowUpDown, MoreVertical, Tag, SplitSquareHorizontal, ZoomIn, RotateCw, Trash2, Upload, Info } from 'lucide-react';
-import { getLoanDocumentStatus } from '../services/epsDocumentApi';
+import { getLoanDocumentStatus, getDocumentsByLoan } from '../services/epsDocumentApi';
 import { openDocPreview, generateDocHtml } from '../services/docPreviewGenerator';
 import { getAppUrl } from '../config/appUrls';
 import DocumentTemplateSelector from './documentTemplates/DocumentTemplateSelector';
@@ -19,6 +19,8 @@ const STACKING_ORDER_CATEGORIES = [
 const BoBSingleFlow = () => {
   const [subjectLoan, setSubjectLoan] = useState('');
   const [bundleName, setBundleName] = useState('');
+  const [externalBundleName, setExternalBundleName] = useState('');
+  const [internalBundleName, setInternalBundleName] = useState('');
   const [borrowerName, setBorrowerName] = useState('');
   const [pdfBundleName, setPdfBundleName] = useState('');
   const [stackingOrder, setStackingOrder] = useState([]);
@@ -36,6 +38,7 @@ const BoBSingleFlow = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [loanValidated, setLoanValidated] = useState(false);
+  const [isValidatingLoan, setIsValidatingLoan] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState(new Set(STACKING_ORDER_CATEGORIES));
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [categoryDropdownPos, setCategoryDropdownPos] = useState({ top: 0, left: 0 });
@@ -122,9 +125,9 @@ const BoBSingleFlow = () => {
     return () => document.removeEventListener('click', close);
   }, [showCategoryDropdown]);
 
-  // Bundle Names from dbo.Bundle (~80 options)
-  const bundleOptions = [
-    "C2C - QC Bundle", "Docs Back - QC Bundle", "Funded - QC Bundle",
+  // External Vendor Packaging bundles (all existing minus C2C - QC Bundle)
+  const externalBundleOptions = [
+    "Docs Back - QC Bundle", "Funded - QC Bundle",
     "Agency Due Diligence", "AIG", "Ally", "AmeriHome", "Axos", "Bank of America",
     "Bank of England", "Barclays", "Caliber", "CarringtonMS", "Chase", "Citibank",
     "Citizens", "Comerica", "Community Lending", "Correspondent One", "CrossCountry",
@@ -144,12 +147,33 @@ const BoBSingleFlow = () => {
     "Zions", "zFHA EBinder"
   ];
 
+  // Internal Operations bundles — top 2 are live, rest are alphabetical placeholders
+  const internalBundleOptions = [
+    "Clear to Close Review",
+    "Recording Fee Reconciliation",
+    "— — — Coming Soon — —",
+    "Compliance Checklist — Post-Fund Audit",
+    "Disbursement Ledger Reconciliation",
+    "HMDA Data Integrity Review",
+    "HOI Coverage Verification",
+    "Investor Delivery Package — Audit",
+    "Loan Modification Review",
+    "NOI / Net Tangible Benefit Review",
+    "PCCD Refund Tracking",
+    "Post-Close QC — Final Docs Audit",
+    "Regulatory Audit — Government Loans",
+    "Servicing Transfer Package",
+    "Title Policy Review — Post-Fund",
+    "VOE / Income Verification Audit",
+    "Wire Confirmation & Disbursement Audit",
+  ];
+
   // Generate stacking order using real EPS API
   const generateStackingOrder = async (loan, bundle) => {
     // Define required documents based on bundle type
     let requiredDocuments;
 
-    if (bundle === 'C2C - QC Bundle') {
+    if (bundle === 'Clear to Close Review') {
       requiredDocuments = [
         { documentType: 'HOI Policy', category: 'MISC', displayOrder: 1 },
         { documentType: 'Title', category: 'TITLE', displayOrder: 2 },
@@ -182,8 +206,8 @@ const BoBSingleFlow = () => {
       ];
     }
 
-    // Special handling for C2C - QC Bundle (mock data for demo)
-    if (bundle === 'C2C - QC Bundle') {
+    // Special handling for Clear to Close Review (mock data for demo)
+    if (bundle === 'Clear to Close Review') {
       console.log(`📄 Generating mock data for: ${bundle}`);
 
       // Pick 2 random indices for Missing and Located - Not Approved
@@ -232,6 +256,35 @@ const BoBSingleFlow = () => {
 
       console.log(`✅ Mock Data Generated - Found: ${documents.filter(d => d.status === 'Found').length}, Missing: 1, Located - Not Approved: 1`);
       return documents;
+    }
+
+    if (bundle === 'Recording Fee Reconciliation') {
+      return [
+        {
+          category: 'POST CLSNG',
+          documentType: 'Final Settlement Statement (FSS)',
+          status: 'Found',
+          displayOrder: 1,
+          foundCount: 1,
+          documents: [{ id: 1, name: 'Final-Settlement-Statement.pdf' }],
+        },
+        {
+          category: 'POST CLSNG',
+          documentType: 'Recorded Deed of Trust / Security Instrument',
+          status: 'Found',
+          displayOrder: 2,
+          foundCount: 1,
+          documents: [{ id: 2, name: 'Recorded-DOT-Security-Instrument.pdf' }],
+        },
+        {
+          category: 'PROP',
+          documentType: 'Recorded Warranty Deed',
+          status: 'Found',
+          displayOrder: 3,
+          foundCount: 1,
+          documents: [{ id: 3, name: 'Recorded-Warranty-Deed.pdf' }],
+        },
+      ];
     }
 
     // For other bundles: Generate random preview with 80% Found, 10% Missing, 10% Located - Not Approved
@@ -327,8 +380,9 @@ const BoBSingleFlow = () => {
   };
 
   const handleLoadStackingOrder = async () => {
+    const activeBundleName = externalBundleName || internalBundleName;
     // Validation should already be done at this point
-    if (!loanValidated || !bundleName) {
+    if (!loanValidated || (!externalBundleName && !internalBundleName)) {
       setValidationError('Please ensure loan number is validated and bundle is selected');
       return;
     }
@@ -339,7 +393,7 @@ const BoBSingleFlow = () => {
 
     try {
       // Generate stacking order (now async with real API!)
-      const docs = await generateStackingOrder(subjectLoan, bundleName);
+      const docs = await generateStackingOrder(subjectLoan, activeBundleName);
       setStackingOrder(docs);
 
       // Fetch borrower name (mock for now - would come from EPS API)
@@ -347,7 +401,7 @@ const BoBSingleFlow = () => {
       setBorrowerName(mockBorrowerName);
 
       // Set PDF Bundle Name (format: borrowername-loannumber-bundlename.pdf)
-      const formattedBundleName = bundleName.toLowerCase().replace(/ /g, '');
+      const formattedBundleName = activeBundleName.toLowerCase().replace(/ /g, '');
       setPdfBundleName(`${mockBorrowerName}-${subjectLoan}-${formattedBundleName}.pdf`);
     } catch (error) {
       setValidationError(`Error loading documents: ${error.message}`);
@@ -437,7 +491,8 @@ const BoBSingleFlow = () => {
       return;
     }
 
-    // Validation passed - show bundle dropdown
+    // TODO (US-105): Gate 2 — BytePro existence check via EPS API when live
+    // ref: BRD-UserStory_US105__LoanSearch-NoMatchesFound-SingleFlow.md
     setValidationError('');
     setLoanValidated(true);
   };
@@ -445,6 +500,8 @@ const BoBSingleFlow = () => {
   const handleStartNew = () => {
     setSubjectLoan('');
     setBundleName('');
+    setExternalBundleName('');
+    setInternalBundleName('');
     setBorrowerName('');
     setPdfBundleName('');
     setStackingOrder([]);
@@ -917,10 +974,10 @@ const BoBSingleFlow = () => {
       </div>
 
       {/* Conditional Page Rendering */}
-      {currentPage === 'shipper' && <ShipperPage onMenuToggle={() => setIsNavPanelOpen(!isNavPanelOpen)} />}
-      {currentPage === 'example-a' && <ExampleScreenA onMenuToggle={() => setIsNavPanelOpen(!isNavPanelOpen)} />}
-      {currentPage === 'example-b' && <ExampleScreenB onMenuToggle={() => setIsNavPanelOpen(!isNavPanelOpen)} />}
-      {currentPage === 'example-c' && <ExampleScreenC onMenuToggle={() => setIsNavPanelOpen(!isNavPanelOpen)} />}
+      {currentPage === 'shipper' && <ShipperPage onMenuToggle={() => setIsNavPanelOpen(!isNavPanelOpen)} onNavigateBack={() => setCurrentPage('single-flow')} />}
+      {currentPage === 'example-a' && <ExampleScreenA onMenuToggle={() => setIsNavPanelOpen(!isNavPanelOpen)} onNavigateBack={() => setCurrentPage('single-flow')} />}
+      {currentPage === 'example-b' && <ExampleScreenB onMenuToggle={() => setIsNavPanelOpen(!isNavPanelOpen)} onNavigateBack={() => setCurrentPage('single-flow')} />}
+      {currentPage === 'example-c' && <ExampleScreenC onMenuToggle={() => setIsNavPanelOpen(!isNavPanelOpen)} onNavigateBack={() => setCurrentPage('single-flow')} />}
 
       {/* Original Single Flow Content */}
       {currentPage === 'single-flow' && (
@@ -983,53 +1040,102 @@ const BoBSingleFlow = () => {
                 </div>
               </div>
 
-              {/* Bundle Name and PDF Bundle Name - Show when loan is validated */}
+              {/* Bundle Dropdowns - Show when loan is validated */}
               {loanValidated && (
-                <div className={`grid ${bundleName ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Select Bundle
-                    </label>
-                    <select
-                      value={bundleName}
-                      onChange={async (e) => {
-                        const selectedBundle = e.target.value;
-                        setBundleName(selectedBundle);
-                        if (selectedBundle) {
-                          const mockBorrowerName = 'johndanieldoe'; // TODO: Fetch from API
-                          const formattedBundleName = selectedBundle.toLowerCase().replace(/ /g, '');
-                          setPdfBundleName(`${mockBorrowerName}-${subjectLoan}-${formattedBundleName}.pdf`);
-                          setBorrowerName(mockBorrowerName);
-                          // Auto-generate stacking order on bundle selection (matches PROD behavior)
-                          setIsLoadingDocuments(true);
-                          try {
-                            const docs = await generateStackingOrder(subjectLoan, selectedBundle);
-                            setStackingOrder(docs);
-                            setFieldsLocked(true);
-                          } catch (err) {
-                            console.error('Failed to auto-generate stacking order:', err);
-                          } finally {
-                            setIsLoadingDocuments(false);
+                <div className="space-y-3 mt-4">
+                  {/* External Vendor Packaging — hide when internal is selected */}
+                  {!internalBundleName && (
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
+                        Select Bundle — External Vendor Packaging
+                      </label>
+                      <select
+                        value={externalBundleName}
+                        onChange={async (e) => {
+                          const selectedBundle = e.target.value;
+                          setExternalBundleName(selectedBundle);
+                          setInternalBundleName('');
+                          setBundleName(selectedBundle);
+                          if (selectedBundle) {
+                            const mockBorrowerName = 'johndanieldoe'; // TODO: Fetch from API
+                            const formattedBundleName = selectedBundle.toLowerCase().replace(/ /g, '');
+                            setPdfBundleName(`${mockBorrowerName}-${subjectLoan}-${formattedBundleName}.pdf`);
+                            setBorrowerName(mockBorrowerName);
+                            setIsLoadingDocuments(true);
+                            try {
+                              const docs = await generateStackingOrder(subjectLoan, selectedBundle);
+                              setStackingOrder(docs);
+                              setFieldsLocked(true);
+                            } catch (err) {
+                              console.error('Failed to auto-generate stacking order:', err);
+                            } finally {
+                              setIsLoadingDocuments(false);
+                            }
+                          } else {
+                            setPdfBundleName('');
+                            setStackingOrder([]);
                           }
-                        } else {
-                          setPdfBundleName('');
-                          setStackingOrder([]);
-                        }
-                      }}
-                      disabled={fieldsLocked}
-                      className="w-full px-3 py-2 border border-gray-300 rounded bg-white disabled:bg-gray-200 disabled:text-gray-600 disabled:cursor-not-allowed text-xs"
-                    >
-                      <option value="">Select</option>
-                      <option value="C2C - QC Bundle" style={{fontWeight: 'bold'}}>C2C - QC Bundle</option>
-                      {bundleOptions.slice(3).map(option => (
-                        <option key={option} value={option}>{option}</option>
-                      ))}
-                    </select>
-                  </div>
+                        }}
+                        disabled={fieldsLocked}
+                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                      >
+                        <option value="">— Select a bundle —</option>
+                        {externalBundleOptions.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
-                  {/* PDF Bundle Name - Show only after bundle is selected */}
-                  {bundleName && (
-                    <div className="flex items-end">
+                  {/* Internal Operations — hide when external is selected */}
+                  {!externalBundleName && (
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
+                        Select Bundle — Internal Operations
+                      </label>
+                      <select
+                        value={internalBundleName}
+                        onChange={async (e) => {
+                          const selectedBundle = e.target.value;
+                          setInternalBundleName(selectedBundle);
+                          setExternalBundleName('');
+                          setBundleName(selectedBundle);
+                          if (selectedBundle) {
+                            const mockBorrowerName = 'johndanieldoe'; // TODO: Fetch from API
+                            const formattedBundleName = selectedBundle.toLowerCase().replace(/ /g, '');
+                            setPdfBundleName(`${mockBorrowerName}-${subjectLoan}-${formattedBundleName}.pdf`);
+                            setBorrowerName(mockBorrowerName);
+                            setIsLoadingDocuments(true);
+                            try {
+                              const docs = await generateStackingOrder(subjectLoan, selectedBundle);
+                              setStackingOrder(docs);
+                              setFieldsLocked(true);
+                            } catch (err) {
+                              console.error('Failed to auto-generate stacking order:', err);
+                            } finally {
+                              setIsLoadingDocuments(false);
+                            }
+                          } else {
+                            setPdfBundleName('');
+                            setStackingOrder([]);
+                          }
+                        }}
+                        disabled={fieldsLocked}
+                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                      >
+                        <option value="">— Select a bundle —</option>
+                        {internalBundleOptions.map((opt, i) => (
+                          opt.startsWith('—')
+                            ? <option key={i} disabled style={{ color: '#9ca3af', fontStyle: 'italic' }}>{opt}</option>
+                            : <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* PDF Bundle Name - Show only after a bundle is selected */}
+                  {(externalBundleName || internalBundleName) && (
+                    <div>
                       <input
                         type="text"
                         value={pdfBundleName}
