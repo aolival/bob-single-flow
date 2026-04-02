@@ -8,7 +8,6 @@ import NavigationPanel from './NavigationPanel';
 import ShipperPage from './ShipperPage';
 import ExampleScreenA from './ExampleScreenA';
 import ExampleScreenB from './ExampleScreenB';
-import ExampleScreenC from './ExampleScreenC';
 
 // Module-level constant — 20 PROD DocumentCategoryIDs (A–Z); All Others is Stored Doc Manager only
 const STACKING_ORDER_CATEGORIES = [
@@ -77,6 +76,11 @@ const BoBSingleFlow = () => {
   const [splitSelectedPages, setSplitSelectedPages] = useState(new Set()); // Phase 3: pages selected for drag
   const [splitActiveSlot, setSplitActiveSlot] = useState(1); // Phase 3: which slot pages drop into
   const isDraggingSplit = useRef(false);
+  const handleSplitMouseMove = useCallback((e) => {
+    if (!isDraggingSplit.current) return;
+    const pct = Math.min(75, Math.max(25, (e.clientX / window.innerWidth) * 100));
+    setSplitPct(pct);
+  }, []);
 
   // Navigation Panel State (Phase 4 Initiative)
   const [isNavPanelOpen, setIsNavPanelOpen] = useState(false); // Toggle navigation panel
@@ -125,9 +129,8 @@ const BoBSingleFlow = () => {
     return () => document.removeEventListener('click', close);
   }, [showCategoryDropdown]);
 
-  // External Vendor Packaging bundles (all existing minus C2C - QC Bundle)
+  // External Vendor Packaging bundles — alphabetical, starting with Agency Due Diligence
   const externalBundleOptions = [
-    "Docs Back - QC Bundle", "Funded - QC Bundle",
     "Agency Due Diligence", "AIG", "Ally", "AmeriHome", "Axos", "Bank of America",
     "Bank of England", "Barclays", "Caliber", "CarringtonMS", "Chase", "Citibank",
     "Citizens", "Comerica", "Community Lending", "Correspondent One", "CrossCountry",
@@ -259,30 +262,98 @@ const BoBSingleFlow = () => {
     }
 
     if (bundle === 'Recording Fee Reconciliation') {
+      // The Big 3: CD (what was charged) → County Receipt (what was paid) → Proof of Refund (resolution)
+      // Supporting docs fill out the full SOP checklist — statuses tell the story of a live discrepancy
       return [
         {
           category: 'POST CLSNG',
-          documentType: 'Final Settlement Statement (FSS)',
+          documentType: 'Final Settlement Statement / Closing Disclosure',
           status: 'Found',
           displayOrder: 1,
           foundCount: 1,
-          documents: [{ id: 1, name: 'Final-Settlement-Statement.pdf' }],
+          documents: [{ id: 1, name: 'Closing-Disclosure-Final.pdf' }],
+          feeNote: 'CD line item: Mortgage Recording Fee — $64.00',
         },
         {
           category: 'POST CLSNG',
-          documentType: 'Recorded Deed of Trust / Security Instrument',
-          status: 'Found',
+          documentType: 'County Recording Receipt — Deed of Trust',
+          status: 'Located - Not Approved',
           displayOrder: 2,
           foundCount: 1,
-          documents: [{ id: 2, name: 'Recorded-DOT-Security-Instrument.pdf' }],
+          documents: [{ id: 2, name: 'County-Recording-Receipt-DOT.pdf' }],
+          feeNote: 'County collected $50.00 — $14.00 short of CD amount',
+        },
+        {
+          category: 'POST CLSNG',
+          documentType: 'Proof of Refund / Recording Fee Overage Resolution',
+          status: 'Missing',
+          displayOrder: 3,
+          foundCount: 0,
+          documents: [],
+          feeNote: 'SOP Step 10 — borrower refund confirmation required within 24h',
+        },
+        {
+          category: 'PROP',
+          documentType: 'Recorded Deed of Trust / Security Instrument',
+          status: 'Found',
+          displayOrder: 4,
+          foundCount: 1,
+          documents: [{ id: 4, name: 'Recorded-DOT-Security-Instrument.pdf' }],
+          feeNote: null,
         },
         {
           category: 'PROP',
           documentType: 'Recorded Warranty Deed',
           status: 'Found',
-          displayOrder: 3,
+          displayOrder: 5,
           foundCount: 1,
-          documents: [{ id: 3, name: 'Recorded-Warranty-Deed.pdf' }],
+          documents: [{ id: 5, name: 'Recorded-Warranty-Deed.pdf' }],
+          feeNote: null,
+        },
+        {
+          category: 'POST CLSNG',
+          documentType: 'Disbursement Ledger',
+          status: 'Found',
+          displayOrder: 6,
+          foundCount: 1,
+          documents: [{ id: 6, name: 'Disbursement-Ledger.pdf' }],
+          feeNote: '$50.00 disbursed to county recorder — does not match CD',
+        },
+        {
+          category: 'POST CLSNG',
+          documentType: 'E-Recording Fee Confirmation / Vendor Receipt',
+          status: 'Located - Not Approved',
+          displayOrder: 7,
+          foundCount: 1,
+          documents: [{ id: 7, name: 'ERecording-Fee-Confirmation.pdf' }],
+          feeNote: 'Pending approval — fee variance not yet reconciled',
+        },
+        {
+          category: 'POST CLSNG',
+          documentType: 'Settlement Agent Correspondence — Fee Overage Notice',
+          status: 'Missing',
+          displayOrder: 8,
+          foundCount: 0,
+          documents: [],
+          feeNote: 'SOP Step 5 — agent must acknowledge overage in writing',
+        },
+        {
+          category: 'TITLE',
+          documentType: 'Title Insurance Policy (Lender)',
+          status: 'Found',
+          displayOrder: 9,
+          foundCount: 1,
+          documents: [{ id: 9, name: 'Lender-Title-Policy.pdf' }],
+          feeNote: null,
+        },
+        {
+          category: 'TITLE',
+          documentType: 'Closing Protection Letter (CPL)',
+          status: 'Found',
+          displayOrder: 10,
+          foundCount: 1,
+          documents: [{ id: 10, name: 'Closing-Protection-Letter.pdf' }],
+          feeNote: null,
         },
       ];
     }
@@ -854,7 +925,7 @@ const BoBSingleFlow = () => {
   const locatedNotApprovedCount = stackingOrder.filter(d => d.status === 'Located - Not Approved').length;
 
   return (
-    <div className="h-screen overflow-hidden bg-white flex flex-col">
+    <div className="h-screen overflow-hidden bg-gray-50 flex flex-col">
       {/* Navigation Panel */}
       <NavigationPanel
         isOpen={isNavPanelOpen}
@@ -864,13 +935,13 @@ const BoBSingleFlow = () => {
       />
 
       {/* Header */}
-      <div className="bg-white border-b px-6 py-4 flex items-center justify-between">
+      <div className="bg-white border-b px-6 py-4 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
           {/* Hamburger Menu Button */}
           <button
             onClick={() => setIsNavPanelOpen(!isNavPanelOpen)}
             className="p-2 hover:bg-gray-100 rounded-lg transition"
-            aria-label="Toggle navigation menu"
+            aria-label="Open navigation"
           >
             <Menu size={24} className="text-gray-700" />
           </button>
@@ -886,29 +957,6 @@ const BoBSingleFlow = () => {
             <text x="0" y="30" fontSize="32" fontWeight="700" fill="url(#clearGradient)" fontFamily="system-ui, -apple-system, sans-serif">C</text>
             <text x="22" y="30" fontSize="32" fontWeight="700" fill="#374151" fontFamily="system-ui, -apple-system, sans-serif">lear</text>
           </svg>
-          <span className="text-black text-2xl font-bold ml-2">- BoB Manager</span>
-        </div>
-
-        {/* CMG Financial Logo - Center */}
-        <div className="absolute left-1/2 transform -translate-x-1/2">
-          <div className="bg-white rounded-lg px-4 py-1.5 shadow-sm">
-            <div className="flex items-baseline gap-1">
-              <span style={{
-                fontSize: '32px',
-                fontWeight: '700',
-                color: '#9ACD32',
-                fontFamily: 'Arial, sans-serif',
-                letterSpacing: '-1px'
-              }}>CMG</span>
-              <span style={{
-                fontSize: '16px',
-                fontWeight: '400',
-                color: '#5A5A5A',
-                fontFamily: 'Arial, sans-serif',
-                letterSpacing: '3px'
-              }}>FINANCIAL</span>
-            </div>
-          </div>
         </div>
 
         <div className="relative">
@@ -977,28 +1025,23 @@ const BoBSingleFlow = () => {
       {currentPage === 'shipper' && <ShipperPage onMenuToggle={() => setIsNavPanelOpen(!isNavPanelOpen)} onNavigateBack={() => setCurrentPage('single-flow')} />}
       {currentPage === 'example-a' && <ExampleScreenA onMenuToggle={() => setIsNavPanelOpen(!isNavPanelOpen)} onNavigateBack={() => setCurrentPage('single-flow')} />}
       {currentPage === 'example-b' && <ExampleScreenB onMenuToggle={() => setIsNavPanelOpen(!isNavPanelOpen)} onNavigateBack={() => setCurrentPage('single-flow')} />}
-      {currentPage === 'example-c' && <ExampleScreenC onMenuToggle={() => setIsNavPanelOpen(!isNavPanelOpen)} onNavigateBack={() => setCurrentPage('single-flow')} />}
 
       {/* Original Single Flow Content */}
       {currentPage === 'single-flow' && (
       <>
       <div
         className="flex flex-1 overflow-hidden"
-        onMouseMove={useCallback((e) => {
-          if (!isDraggingSplit.current) return;
-          const pct = Math.min(75, Math.max(25, (e.clientX / window.innerWidth) * 100));
-          setSplitPct(pct);
-        }, [])}
+        onMouseMove={handleSplitMouseMove}
         onMouseUp={() => { isDraggingSplit.current = false; }}
         onMouseLeave={() => { isDraggingSplit.current = false; }}
       >
-        <div style={showDocsPanel ? { width: `${splitPct}%` } : {}} className={`${showDocsPanel ? '' : 'max-w-4xl mx-auto w-full'} p-4 transition-none`}>
-        <h1 className="text-2xl font-bold text-gray-800 mb-3">
+        <div style={showDocsPanel ? { width: `${splitPct}%` } : {}} className={`${showDocsPanel ? '' : 'max-w-4xl mx-auto w-full'} p-4 transition-none flex flex-col overflow-hidden`}>
+        <h1 className="text-2xl font-bold text-gray-800 mb-3 flex-shrink-0">
           Bundle Builder - Single Loan
         </h1>
 
         {/* Selection Section */}
-        <div className="mb-2">
+        <div className="mb-2 flex-shrink-0">
           <div className="space-y-3">
               {/* Subject Loan - Always show first */}
               <div>
@@ -1042,109 +1085,132 @@ const BoBSingleFlow = () => {
 
               {/* Bundle Dropdowns - Show when loan is validated */}
               {loanValidated && (
-                <div className="space-y-3 mt-4">
-                  {/* External Vendor Packaging — hide when internal is selected */}
-                  {!internalBundleName && (
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
-                        Select Bundle — External Vendor Packaging
-                      </label>
-                      <select
-                        value={externalBundleName}
-                        onChange={async (e) => {
-                          const selectedBundle = e.target.value;
-                          setExternalBundleName(selectedBundle);
-                          setInternalBundleName('');
-                          setBundleName(selectedBundle);
-                          if (selectedBundle) {
-                            const mockBorrowerName = 'johndanieldoe'; // TODO: Fetch from API
-                            const formattedBundleName = selectedBundle.toLowerCase().replace(/ /g, '');
-                            setPdfBundleName(`${mockBorrowerName}-${subjectLoan}-${formattedBundleName}.pdf`);
-                            setBorrowerName(mockBorrowerName);
-                            setIsLoadingDocuments(true);
-                            try {
-                              const docs = await generateStackingOrder(subjectLoan, selectedBundle);
-                              setStackingOrder(docs);
-                              setFieldsLocked(true);
-                            } catch (err) {
-                              console.error('Failed to auto-generate stacking order:', err);
-                            } finally {
-                              setIsLoadingDocuments(false);
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  {/* LEFT COLUMN: External (default) or Internal when internal is chosen */}
+                  <div>
+                    {!internalBundleName && (
+                      <>
+                        <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
+                          Select Bundle — External Vendor Packaging
+                        </label>
+                        <select
+                          value={externalBundleName}
+                          onChange={async (e) => {
+                            const selectedBundle = e.target.value;
+                            setExternalBundleName(selectedBundle);
+                            setInternalBundleName('');
+                            setBundleName(selectedBundle);
+                            if (selectedBundle) {
+                              const mockBorrowerName = 'johndanieldoe'; // TODO: Fetch from API
+                              const formattedBundleName = selectedBundle.toLowerCase().replace(/ /g, '');
+                              setPdfBundleName(`${mockBorrowerName}-${subjectLoan}-${formattedBundleName}.pdf`);
+                              setBorrowerName(mockBorrowerName);
+                              setIsLoadingDocuments(true);
+                              try {
+                                const docs = await generateStackingOrder(subjectLoan, selectedBundle);
+                                setStackingOrder(docs);
+                                setFieldsLocked(true);
+                              } catch (err) {
+                                console.error('Failed to auto-generate stacking order:', err);
+                              } finally {
+                                setIsLoadingDocuments(false);
+                              }
+                            } else {
+                              setPdfBundleName('');
+                              setStackingOrder([]);
                             }
-                          } else {
-                            setPdfBundleName('');
-                            setStackingOrder([]);
-                          }
-                        }}
-                        disabled={fieldsLocked}
-                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-400"
-                      >
-                        <option value="">— Select a bundle —</option>
-                        {externalBundleOptions.map((opt) => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
+                          }}
+                          disabled={fieldsLocked}
+                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                        >
+                          <option value="">— Select a bundle —</option>
+                          {externalBundleOptions.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+                    {internalBundleName && (
+                      <>
+                        <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
+                          Select Bundle — Internal Operations
+                        </label>
+                        <select
+                          value={internalBundleName}
+                          disabled
+                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 bg-gray-50"
+                        >
+                          {internalBundleOptions.map((opt, i) => (
+                            opt.startsWith('—')
+                              ? <option key={i} disabled>{opt}</option>
+                              : <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+                  </div>
 
-                  {/* Internal Operations — hide when external is selected */}
-                  {!externalBundleName && (
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
-                        Select Bundle — Internal Operations
-                      </label>
-                      <select
-                        value={internalBundleName}
-                        onChange={async (e) => {
-                          const selectedBundle = e.target.value;
-                          setInternalBundleName(selectedBundle);
-                          setExternalBundleName('');
-                          setBundleName(selectedBundle);
-                          if (selectedBundle) {
-                            const mockBorrowerName = 'johndanieldoe'; // TODO: Fetch from API
-                            const formattedBundleName = selectedBundle.toLowerCase().replace(/ /g, '');
-                            setPdfBundleName(`${mockBorrowerName}-${subjectLoan}-${formattedBundleName}.pdf`);
-                            setBorrowerName(mockBorrowerName);
-                            setIsLoadingDocuments(true);
-                            try {
-                              const docs = await generateStackingOrder(subjectLoan, selectedBundle);
-                              setStackingOrder(docs);
-                              setFieldsLocked(true);
-                            } catch (err) {
-                              console.error('Failed to auto-generate stacking order:', err);
-                            } finally {
-                              setIsLoadingDocuments(false);
+                  {/* RIGHT COLUMN: Internal dropdown (pre-selection) or PDF bundle name (post-selection) */}
+                  <div>
+                    {!externalBundleName && !internalBundleName && (
+                      <>
+                        <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
+                          Select Bundle — Internal Operations
+                        </label>
+                        <select
+                          value={internalBundleName}
+                          onChange={async (e) => {
+                            const selectedBundle = e.target.value;
+                            setInternalBundleName(selectedBundle);
+                            setExternalBundleName('');
+                            setBundleName(selectedBundle);
+                            if (selectedBundle) {
+                              const mockBorrowerName = 'johndanieldoe'; // TODO: Fetch from API
+                              const formattedBundleName = selectedBundle.toLowerCase().replace(/ /g, '');
+                              setPdfBundleName(`${mockBorrowerName}-${subjectLoan}-${formattedBundleName}.pdf`);
+                              setBorrowerName(mockBorrowerName);
+                              setIsLoadingDocuments(true);
+                              try {
+                                const docs = await generateStackingOrder(subjectLoan, selectedBundle);
+                                setStackingOrder(docs);
+                                setFieldsLocked(true);
+                              } catch (err) {
+                                console.error('Failed to auto-generate stacking order:', err);
+                              } finally {
+                                setIsLoadingDocuments(false);
+                              }
+                            } else {
+                              setPdfBundleName('');
+                              setStackingOrder([]);
                             }
-                          } else {
-                            setPdfBundleName('');
-                            setStackingOrder([]);
-                          }
-                        }}
-                        disabled={fieldsLocked}
-                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-400"
-                      >
-                        <option value="">— Select a bundle —</option>
-                        {internalBundleOptions.map((opt, i) => (
-                          opt.startsWith('—')
-                            ? <option key={i} disabled style={{ color: '#9ca3af', fontStyle: 'italic' }}>{opt}</option>
-                            : <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {/* PDF Bundle Name - Show only after a bundle is selected */}
-                  {(externalBundleName || internalBundleName) && (
-                    <div>
-                      <input
-                        type="text"
-                        value={pdfBundleName}
-                        readOnly
-                        className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-600 text-xs"
-                        placeholder="Auto-generated"
-                      />
-                    </div>
-                  )}
+                          }}
+                          disabled={fieldsLocked}
+                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                        >
+                          <option value="">— Select a bundle —</option>
+                          {internalBundleOptions.map((opt, i) => (
+                            opt.startsWith('—')
+                              ? <option key={i} disabled style={{ color: '#9ca3af', fontStyle: 'italic' }}>{opt}</option>
+                              : <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+                    {(externalBundleName || internalBundleName) && (
+                      <>
+                        <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
+                          Bundle Name
+                        </label>
+                        <input
+                          type="text"
+                          value={pdfBundleName}
+                          readOnly
+                          className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-600 text-xs"
+                          placeholder="Auto-generated"
+                        />
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1216,8 +1282,8 @@ const BoBSingleFlow = () => {
 
         {/* Stacking Order Display */}
         {stackingOrder.length > 0 && (
-          <div>
-            <div className="pb-2 mb-1 flex items-center justify-between">
+          <div className="flex flex-col flex-1 min-h-0">
+            <div className="pb-2 mb-1 flex items-center justify-between flex-shrink-0">
               <h2 className="text-xl font-semibold text-teal-600">
                 Stacking Order - {subjectLoan}
               </h2>
@@ -1238,9 +1304,9 @@ const BoBSingleFlow = () => {
               )}
             </div>
 
-            <div className="py-2">
+            <div className="py-2 flex flex-col flex-1 min-h-0">
               {/* Status Tabs and Actions */}
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-3 flex-shrink-0">
                 {/* Filter tabs */}
                 <button
                   onClick={() => setActiveStatusTab('all')}
@@ -1336,8 +1402,8 @@ const BoBSingleFlow = () => {
               </div>
 
               {/* Documents Table — only this scrolls, form section above stays fixed */}
-              <div className="border border-gray-200 rounded overflow-hidden">
-                <div className="overflow-y-auto max-h-[calc(100vh-370px)]">
+              <div className="border border-gray-200 rounded overflow-hidden flex flex-col flex-1 min-h-0">
+                <div className="overflow-y-auto flex-1">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b sticky top-0 z-10">
                     <tr>
@@ -1378,35 +1444,40 @@ const BoBSingleFlow = () => {
                     {filteredDocs.map((doc, index) => (
                       <tr key={index} className="hover:bg-gray-50">
                         <td className="px-3 py-2">
-                          {doc.status === 'Found' && doc.foundCount === 1 ? (
-                            <span className="flex items-center gap-1.5">
-                              {activeDocument === doc.documentType && (
-                                <Eye size={14} className="text-teal-600 flex-shrink-0" />
-                              )}
-                              <span className="font-medium text-xs text-gray-800">{doc.documentType}</span>
-                              <button
-                                onClick={() => openDocPreview(doc.documentType, subjectLoan, borrowerName)}
-                                title="Open document preview"
-                                className="p-0.5 rounded hover:bg-teal-100 text-teal-500 hover:text-teal-700 flex-shrink-0"
-                              >
-                                <ExternalLink size={15} />
-                              </button>
-                            </span>
-                          ) : doc.status === 'Found' && doc.foundCount > 1 ? (
-                            <span className="flex items-center gap-1.5">
-                              {activeDocument === doc.documentType && (
-                                <Eye size={14} className="text-teal-600 flex-shrink-0" />
-                              )}
-                              <span className="font-medium text-xs text-gray-800">{doc.documentType}</span>
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1.5">
-                              {activeDocument === doc.documentType && (
-                                <Eye size={14} className="text-teal-600 flex-shrink-0" />
-                              )}
-                              <span className="font-medium text-xs text-gray-800">{doc.documentType}</span>
-                            </span>
-                          )}
+                          <div>
+                            {doc.status === 'Found' && doc.foundCount === 1 ? (
+                              <span className="flex items-center gap-1.5">
+                                {activeDocument === doc.documentType && (
+                                  <Eye size={14} className="text-teal-600 flex-shrink-0" />
+                                )}
+                                <span className="font-medium text-xs text-gray-800">{doc.documentType}</span>
+                                <button
+                                  onClick={() => openDocPreview(doc.documentType, subjectLoan, borrowerName)}
+                                  title="Open document preview"
+                                  className="p-0.5 rounded hover:bg-teal-100 text-teal-500 hover:text-teal-700 flex-shrink-0"
+                                >
+                                  <ExternalLink size={15} />
+                                </button>
+                              </span>
+                            ) : doc.status === 'Found' && doc.foundCount > 1 ? (
+                              <span className="flex items-center gap-1.5">
+                                {activeDocument === doc.documentType && (
+                                  <Eye size={14} className="text-teal-600 flex-shrink-0" />
+                                )}
+                                <span className="font-medium text-xs text-gray-800">{doc.documentType}</span>
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1.5">
+                                {activeDocument === doc.documentType && (
+                                  <Eye size={14} className="text-teal-600 flex-shrink-0" />
+                                )}
+                                <span className="font-medium text-xs text-gray-800">{doc.documentType}</span>
+                              </span>
+                            )}
+                            {doc.feeNote && (
+                              <p className="text-xs text-amber-600 font-medium mt-0.5">{doc.feeNote}</p>
+                            )}
+                          </div>
                         </td>
                         <td className="px-3 py-2">
                           <span className="flex items-center gap-1.5">

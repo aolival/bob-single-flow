@@ -7,7 +7,6 @@ const NavigationPanel = ({ isOpen, onClose, onNavigate, currentPage }) => {
     { id: 'shipper', label: 'Shipper', icon: Home, type: 'internal' },
     { id: 'example-a', label: 'Recording Fee Reconciliation', icon: Receipt, type: 'internal' },
     { id: 'example-b', label: 'Clear to Close Review', icon: CheckSquare, type: 'internal' },
-    { id: 'example-c', label: 'Example Screen C', icon: null, type: 'internal' },
   ];
 
   const bobSuiteItems = [

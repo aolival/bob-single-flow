@@ -60,9 +60,9 @@ Please provide the following:
 
 If you have any questions, please advise. My contact information is listed below.
 
-Laura Harris | External Auditor
+Aza Olival | Post Closing
 CMG Financial | NMLS# 1820 | 3160 Crow Canyon Road, Suite 400 | San Ramon, CA 94583
-Office: 972.893.6376 | Email: lharris@cmgfi.com`;
+Office: (925) 746-7400 | Email: aolival@cmgfi.com`;
 
   const handleReset = () => {
     setIsMismatch(false);
@@ -97,7 +97,7 @@ Office: 972.893.6376 | Email: lharris@cmgfi.com`;
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
+    <div className="flex-1 min-h-0 flex flex-col bg-gray-100">
       {/* Toolbar */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-4xl mx-auto px-6 py-2.5 flex items-center justify-between">
@@ -286,9 +286,30 @@ Office: 972.893.6376 | Email: lharris@cmgfi.com`;
           {/* Action Required */}
           <div className="bg-white rounded-lg shadow-sm p-5">
             <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Action Required — Steps 8–10</h2>
-            {allMatch ? (
-              <div className="space-y-3">
+            <div className="space-y-3">
+              {!allMatch && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-xs font-semibold text-amber-800 mb-1">⚠️ Fee Mismatch — Refund Required</p>
+                  <p className="text-xs text-amber-700">
+                    Recorded DOT fee (${fees.recordedDOT.toFixed(2)}) does not match FSS Mortgage recording fee (${fees.fssMortgage.toFixed(2)}).
+                    A refund request must be sent to the Settlement Agent. The refund will be processed by the Title Company.
+                  </p>
+                </div>
+              )}
+              {allMatch && (
                 <p className="text-xs text-gray-600">All recording fees match the Final Settlement Statement. Mark this loan resolved and update BytePro.</p>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={handleOpenEmail}
+                  disabled={emailSent}
+                  className={`flex items-center gap-2 px-4 py-2 rounded text-sm font-semibold transition ${
+                    emailSent ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
+                >
+                  <Mail size={15} />
+                  {emailSent ? 'Email Sent' : 'Generate Email to Settlement Company'}
+                </button>
                 <button
                   onClick={handleMarkResolved}
                   disabled={resolved}
@@ -300,27 +321,7 @@ Office: 972.893.6376 | Email: lharris@cmgfi.com`;
                   {resolved ? 'Marked Resolved' : 'Mark Resolved — Update BytePro'}
                 </button>
               </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <p className="text-xs font-semibold text-amber-800 mb-1">⚠️ Fee Mismatch — Refund Required</p>
-                  <p className="text-xs text-amber-700">
-                    Recorded DOT fee (${fees.recordedDOT.toFixed(2)}) does not match FSS Mortgage recording fee (${fees.fssMortgage.toFixed(2)}).
-                    A refund request must be sent to the Settlement Agent. The refund will be processed by the Title Company.
-                  </p>
-                </div>
-                <button
-                  onClick={handleOpenEmail}
-                  disabled={emailSent}
-                  className={`flex items-center gap-2 px-4 py-2 rounded text-sm font-semibold transition ${
-                    emailSent ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'
-                  }`}
-                >
-                  <Mail size={15} />
-                  {emailSent ? 'Email Sent' : 'Generate Email to Settlement Company'}
-                </button>
-              </div>
-            )}
+            </div>
           </div>
 
           {/* Email Composer */}
@@ -331,6 +332,10 @@ Office: 972.893.6376 | Email: lharris@cmgfi.com`;
                 <div className="flex items-center gap-3 py-2 border-b border-gray-100">
                   <span className="text-xs text-gray-400 w-14 flex-shrink-0">To:</span>
                   <span className="text-xs font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded">{MOCK_SETTLEMENT.email}</span>
+                </div>
+                <div className="flex items-center gap-3 py-2 border-b border-gray-100">
+                  <span className="text-xs text-gray-400 w-14 flex-shrink-0">CC:</span>
+                  <span className="text-xs font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded">aolival@cmgfi.com</span>
                 </div>
                 <div className="flex items-center gap-3 py-2 border-b border-gray-100">
                   <span className="text-xs text-gray-400 w-14 flex-shrink-0">Subject:</span>
